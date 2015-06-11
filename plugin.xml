@@ -15,5 +15,7 @@
     <siteLinks>
         <link url="#" function='language' icon="globe.glyph" description="Choose Language" perm="admin" ></link>
     </siteLinks>
-	
+    <userClasses>
+        <class name="TRANSLATE_ME" description="Items requiring translation and the team members who do it." />
+    </userClasses>
 </e107Plugin>

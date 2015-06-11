@@ -94,7 +94,7 @@ class status_admin_ui extends e_admin_ui
 
 		protected $prefs = array(
 			'syncLanguages'         => array('title'=> "Sync Table Content",  'tab'=>0, 'type'=>'method', 'data'=>'str'),
-			'untranslatedClass'	    => array('title'=> "Untranslated Class", 'tab'=>0, 'type'=>'userclass' ),
+			'untranslatedClass'	    => array('title'=> "Untranslated Class", 'tab'=>0, 'type'=>'userclass', 'writeParms'=>array('default'=>'TRANSLATE_ME')),
 			'offline_languages'     => array('title' => "Offline", 'tab'=>1, 'type'=>'method', 'data'=>'str'),
 			'offline_excludeadmins' => array('title'=>'Exclude Admins from redirect', 'tab'=>1, 'type'=>'boolean'),
 
@@ -121,6 +121,8 @@ class status_admin_ui extends e_admin_ui
 			}
 
 			$this->initAll();
+
+
 
 		}
 

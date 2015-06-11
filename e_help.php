@@ -12,7 +12,7 @@ $text .= "</table>";
 
 $text .= "<div style='margin-top:5px'>Mouseover each icon to check the title of the item</div>";
 
-$ns->tablerender("Copy Help",$text); 
+$ns->tablerender("Translation Status",$text);
 
 
 ?>
