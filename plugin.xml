@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e107Plugin name="Multiple Languages" lan="" version="1.0" date="2015-06-04" compatibility="2.0" installRequired="true" >
+	<author name="cameron" url="http://e107.org" />
+	<summary lan="">Multi-Language tools for e107</summary>
+	<description lan="">Multi-Language tools for e107</description>
+	<keywords>
+		<word>multilanguage</word>
+		<word>sync</word>
+	</keywords>
+	<category>manage</category>
+	<copyright></copyright>
+	<adminLinks>
+		<link url="admin_config.php" description="" icon="" iconSmall="" primary="true" >LAN_CONFIGURE</link>
+	</adminLinks>
+    <siteLinks>
+        <link url="#" function='language' icon="globe.glyph" description="Choose Language" perm="admin" ></link>
+    </siteLinks>
+	
+</e107Plugin>
