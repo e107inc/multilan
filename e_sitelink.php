@@ -49,8 +49,10 @@ class multilan_sitelink // include plugin-folder in the name.
 			{
 				$redirect = deftrue("MULTILANG_SUBDOMAIN") ? $lng->subdomainUrl($ln) : e_SELF."?elan=".$ln;
 
+				$name = $lng->toNative($ln);
+
 				$sublinks[] = array(
-					'link_name'			=> $tp->toHtml($ln,'','TITLE'),
+					'link_name'			=> $tp->toHtml($name,'','TITLE'),
 					'link_url'			=> $redirect,
 					'link_description'	=> $ln,
 					'link_button'		=> '',
