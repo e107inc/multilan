@@ -70,6 +70,22 @@ class multilan_adminArea extends e_admin_dispatcher
 	);	
 	
 	protected $menuTitle = 'Multiple Languages';
+
+
+	function init()
+	{
+		$sitelanguage = e107::getPref('sitelanguage');
+		if(e_LANGUAGE != $sitelanguage)
+		{
+
+			e107::getMessage()->addWarning("Please switch to ".$sitelanguage." to view.");
+			$this->adminMenu = array();
+
+			return false;
+		}
+
+
+	}
 }
 
 class status_admin_ui extends e_admin_ui
@@ -97,7 +113,7 @@ class status_admin_ui extends e_admin_ui
 			'untranslatedClass'	    => array('title'=> "Untranslated Class", 'tab'=>0, 'type'=>'userclass', 'writeParms'=>array('default'=>'TRANSLATE_ME')),
 			'offline_languages'     => array('title' => "Offline", 'tab'=>1, 'type'=>'method', 'data'=>'str'),
 			'offline_excludeadmins' => array('title'=>'Exclude Admins from redirect', 'tab'=>1, 'type'=>'boolean'),
-
+			'language_navigation'    => array('title'=>"Language Navigation", 'type'=>'method', 'tab'=>1)
 
 		//	'retain sefurls'	  => array('title'=> "Untranslated Class", 'tab'=>0, 'type'=>'userclass' ),
 		);
@@ -120,7 +136,11 @@ class status_admin_ui extends e_admin_ui
 				return;
 			}
 
-			$this->initAll();
+
+			if($this->initAll() === false)
+			{
+				return false;
+			}
 
 
 
@@ -141,6 +161,12 @@ class status_admin_ui extends e_admin_ui
 			sort($languages);
 
 			$sitelanguage = e107::getPref('sitelanguage');
+
+			if(e_LANGUAGE != $sitelanguage)
+			{
+				$this->pid                  = 'news_id';
+				return false;
+			}
 
 
 			$initType = 'init'.ucfirst($this->getMode());
@@ -366,6 +392,39 @@ class status_admin_ui extends e_admin_ui
 
 	class status_form_ui extends e_admin_form_ui
 	{
+
+
+		function language_navigation($curVal,$mode)
+		{
+
+			$lng = e107::getLanguage();
+			$frm = e107::getForm();
+			$languages = $lng->installed();
+
+			sort($languages);
+
+			$text = "<table class='table table-striped table-bordered table-condensed'>
+					<colgroup>
+					<col style='width:20%' />
+					<col style='width:80%' />
+					</colgroup>
+
+		        <tr>
+			        <th>Language</th>
+			        <th>Sitelink Status</th>
+		        </tr>";
+
+			foreach($languages as $v)
+			{
+				$text .= "<tr><td>".$v."</td><td>".$frm->radio_switch('language_navigation['.$v.']', varset($curVal[$v],1))."</td></tr>";
+			}
+
+			$text .= "</table>";
+
+			return $text;
+
+		}
+
 
 		function syncLanguages($curVal) // preference.
 		{

@@ -40,16 +40,34 @@ class multilan_sitelink // include plugin-folder in the name.
 		$lng = e107::getLanguage();
 		$data = $lng->installed();
 
+		$activeLangs = e107::pref('multilan','language_navigation');
+
 		sort($data);
 
 		foreach($data as $k=>$ln)
 		{
+
+
+
 
 			if($lng->isValid($ln))
 			{
 				$redirect = deftrue("MULTILANG_SUBDOMAIN") ? $lng->subdomainUrl($ln) : e_SELF."?elan=".$ln;
 
 				$name = $lng->toNative($ln);
+
+				if(isset($activeLangs[$ln]) && empty($activeLangs[$ln]))
+				{
+					if(!ADMIN)
+					{
+						continue;
+					}
+					else
+					{
+						$name .= " (hidden)";
+					}
+				}
+
 
 				$sublinks[] = array(
 					'link_name'			=> $tp->toHtml($name,'','TITLE'),
