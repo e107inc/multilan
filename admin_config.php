@@ -96,6 +96,8 @@ class status_admin_ui extends e_admin_ui
 	//	protected $pid			= null;
 		protected $perPage      = 10; //no limit
 		protected $batchDelete  = false;
+		protected $batchCopy    = false;
+		protected $batchOptions = array();
 	//	protected $listOrder	= null;
 
 		protected $fields       = array();
@@ -106,21 +108,30 @@ class status_admin_ui extends e_admin_ui
 		public $statusLink      = null;
 		public $statusTitle     = null; // fieldName
 
-		protected $preftabs        = array("Data Sync", "Offline" );
+		protected $preftabs        = array("Data Sync", "Offline", "Bing" );
 
 		protected $prefs = array(
 			'syncLanguages'         => array('title'=> "Sync Table Content",  'tab'=>0, 'type'=>'method', 'data'=>'str'),
 			'untranslatedClass'	    => array('title'=> "Untranslated Class", 'tab'=>0, 'type'=>'userclass', 'writeParms'=>array('default'=>'TRANSLATE_ME')),
 			'offline_languages'     => array('title' => "Offline", 'tab'=>1, 'type'=>'method', 'data'=>'str'),
 			'offline_excludeadmins' => array('title'=>'Exclude Admins from redirect', 'tab'=>1, 'type'=>'boolean'),
-			'language_navigation'    => array('title'=>"Language Navigation", 'type'=>'method', 'tab'=>1)
+			'language_navigation'    => array('title'=>"Language Navigation", 'type'=>'method', 'tab'=>1),
+			'bing_translator'       => array('title' => 'Frontend Auto-Translator', 'type'=>'dropdown', 'tab'=>2,'writeParms'=>array(0=>'Off', 'auto'=>'Auto', 'notify'=>'Notify')),
+
+			'bing_exclude_installed'=>  array('title' => 'Exclude installed languages', 'type'=>'boolean', 'tab'=>2, 'help'=>"If enabled, will exclude languages currently installed in e107 from the available bing translations."),
 
 		//	'retain sefurls'	  => array('title'=> "Untranslated Class", 'tab'=>0, 'type'=>'userclass' ),
 		);
 
 
+		protected $languageTables = array();
+
+
 		function init()
 		{
+
+			$this->languageTables = e107::getDb()->db_IsLang(array('news','page','faqs'),true);
+
 			if(e107::isInstalled("faqs"))
 			{
 				$this->initFaqsPrefs();
@@ -144,6 +155,63 @@ class status_admin_ui extends e_admin_ui
 
 
 
+		}
+
+
+		function handleListBatch($selected, $value)
+		{
+
+		//	print_a($selected);
+		//	echo "Val: ".print_a($value,true);
+		//	e107::getMessage()->addInfo("Translating...");
+		//	e107::getMessage()->addInfo(print_a($selected,true));
+		//	e107::getMessage()->addInfo(print_a($value,true));
+
+
+			list($mode,$language) = explode("_",$value);
+
+
+			if($mode == 'copy')
+			{
+
+				$mode = $this->getMode();
+				$pid = '';
+				$method = '';
+
+				switch($mode)
+				{
+					case "news":
+						$pid = 'news_id';
+						$method = 'syncNews';
+					break;
+
+					case "page":
+						$pid = 'page_id';
+						$method = 'syncPage';
+						break;
+
+					case "faqs":
+						$pid = 'faq_id';
+						$method = 'syncFAQs';
+						break;
+				}
+
+				if(empty($pid) || empty($method))
+				{
+					return false;
+				}
+
+				$mlan = new multilan_copymodule;
+				$data = array();
+				foreach($selected as $id)
+				{
+					$data['newData'] = array($pid=>$id);
+					$languages = array($language);
+					$mlan->$method($data, null,  $languages); // eg syncNews.
+				}
+
+				e107::getRedirect()->go(e_REQUEST_URI);
+			}
 		}
 
 
@@ -183,8 +251,39 @@ class status_admin_ui extends e_admin_ui
 				}
 
 				$key = $lng->convert($v);
+
+
 				$this->fields[$key] = array('title'=> $key,	'type' => 'method', 	'data' => 'str',  'method'=>'findTranslations',	'width' => '100px',	'thclass' => 'center', 'class'=>'center', 'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 			}
+
+			$mode = $this->getMode();
+
+			foreach($languages as $v)
+			{
+				$lowerLang = strtolower($v);
+				if($v == $sitelanguage || !isset($this->languageTables[$lowerLang][MPREFIX.$mode ]))
+				{
+					continue;
+				}
+
+				$this->batchOptions['copy_'.$v] = "Copy into ".$v.' table';
+			}
+
+
+
+			foreach($languages as $v)
+			{
+				$lowerLang = strtolower($v);
+				if($v == $sitelanguage || !isset($this->languageTables[$lowerLang][MPREFIX.$mode ]))
+				{
+					continue;
+				}
+
+			//	$this->batchOptions['bing_'.$v] = "Bing-Translate into ".$v." table";
+			}
+
+
+
 
 			$this->fields['options']    = array('title'=> 'Status',			'type' => 'method',		'nolist'=>true,		'width' => '10%', 'forced'=>TRUE, 'thclass' => 'center last', 'class' => 'center');
 			$this->fieldpref = array_keys($this->fields);
@@ -336,6 +435,8 @@ class status_admin_ui extends e_admin_ui
 
 			$fields = $this->fields;
 
+			$sitelanguage = e107::getPref('sitelanguage');
+
 			unset($fields['checkboxes'], $fields['options']);
 
 			$selectFields = implode(",", array_keys($fields));
@@ -347,6 +448,11 @@ class status_admin_ui extends e_admin_ui
 			$langData = array();
 			foreach($languages as $langu)
 			{
+				if($langu == $sitelanguage || !$sql2->db_Table_exists($this->table,$langu))
+				{
+					continue;
+				}
+
 				$lg = strtolower($langu);
 				$qry = str_replace("{LANGUAGE}",$lg,$query);
 				$key = $lng->convert($langu);
@@ -430,11 +536,14 @@ class status_admin_ui extends e_admin_ui
 		{
 
 			$frm = e107::getForm();
+			$sql = e107::getDb('sql2');
 			$modeData = $this->getController()->getDispatcher()->getMenuData();
 
 			$text2 = "<table class='table table-striped table-condensed table-bordered'>";
 
 			$options = array();
+			$tableInstalled = array();
+
 			$opts = e107::getLanguage()->installed();
 
 			foreach($opts as $v)
@@ -445,10 +554,20 @@ class status_admin_ui extends e_admin_ui
 				}
 
 				$options[$v] = $v;
+
+				foreach($modeData as $key=>$val)
+				{
+					list($mode,$action) = explode("/",$key);
+					if($action != 'list')
+					{
+						continue;
+					}
+
+					$tableInstalled[$mode][$v] = $sql->db_Table_exists($mode,$v);
+				}
 			}
 
-	//		print_a($curVal);
-
+	
 			foreach($modeData as $k=>$v)
 			{
 				list($mode,$action) = explode("/",$k);
@@ -457,7 +576,19 @@ class status_admin_ui extends e_admin_ui
 					continue;
 				}
 
-				$text2 .= "<tr><td>".$v['caption']."</td><td>".$frm->checkboxes('syncLanguages['.$mode.'][]', $options, varset($curVal[$mode]), array('useKeyValues'=>1))."</td></tr>";
+				$lanOpts = $options;
+
+				foreach($lanOpts as $keyOpt=>$opt)
+				{
+					if(empty($tableInstalled[$mode][$opt]))
+					{
+						$lanOpts[$opt] .= ' (not installed)' ; // " <span class='label label-warning'>Not installed</span>";
+					}
+				}
+
+				$text2 .= "<tr><td>".$v['caption']."</td><td>".$frm->checkboxes('syncLanguages['.$mode.'][]', $lanOpts, varset($curVal[$mode]), array('useKeyValues'=>1));
+
+				$text2 .= "</td></tr>";
 			}
 
 

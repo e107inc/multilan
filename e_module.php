@@ -9,8 +9,11 @@
 if (!defined('e107_INIT')) { exit; }
 
 
-e107::getEvent()->register("newspost", array("multilan_copymodule", "syncNews"));
-e107::getEvent()->register("newsupd", array("multilan_copymodule", "syncNews"));
+// e107::getEvent()->register("newspost", array("multilan_copymodule", "syncNews"));
+// e107::getEvent()->register("newsupd", array("multilan_copymodule", "syncNews"));
+
+e107::getEvent()->register("admin_news_updated", array("multilan_copymodule", "syncNews"));
+e107::getEvent()->register("admin_news_created", array("multilan_copymodule", "syncNews"));
 e107::getEvent()->register("admin_page_updated", array("multilan_copymodule", "syncPage"));
 e107::getEvent()->register("admin_page_created", array("multilan_copymodule", "syncPage"));
 e107::getEvent()->register("admin_faqs_updated", array("multilan_copymodule", "syncFaqs"));
@@ -50,22 +53,7 @@ class multilan_copymodule
 
 
 
-	function syncNews($data)
-	{
-
-		if($this->wrongLanguage())
-		{
-			return false;
-		}
-
-		foreach($this->languages['news'] as $k=>$lng)
-		{
-			$this->insert('news', $lng, array('news_id', $data['news_id']), 'news_class');
-		}
-	}
-
-
-	function syncPage($data)
+	function syncNews($data, $event='', $languages=array())
 	{
 
 		if($this->wrongLanguage())
@@ -75,14 +63,35 @@ class multilan_copymodule
 
 		$data = $data['newData'];
 
-		foreach($this->languages['page'] as $k=>$lng)
+		$langs = (empty($languages)) ? $this->languages['news'] : $languages;
+
+		foreach($langs as $k=>$lng)
+		{
+			$this->insert('news', $lng, array('news_id', $data['news_id']), 'news_class');
+		}
+	}
+
+
+	function syncPage($data, $event = '', $languages=array())
+	{
+
+		if($this->wrongLanguage())
+		{
+			return false;
+		}
+
+		$data = $data['newData'];
+
+		$langs = (empty($languages)) ? $this->languages['page'] : $languages;
+
+		foreach($langs as $k=>$lng)
 		{
 			$this->insert('page', $lng, array('page_id', $data['page_id']), 'page_class');
 		}
 	}
 
 
-	function syncFaqs($data)
+	function syncFaqs($data, $event='', $languages = array())
 	{
 
 		if($this->wrongLanguage())
@@ -94,12 +103,16 @@ class multilan_copymodule
 
 		$this->untranslatedClass = $this->untranslatedFAQCat;
 
-	//	e107::getMessage()->addDebug(print_a($data,true));
+		//	e107::getMessage()->addDebug(print_a($data,true));
 
-		foreach($this->languages['faqs'] as $k=>$lng)
+		$langs = (empty($languages)) ? $this->languages['faqs'] : $languages;
+
+		foreach($langs as $k=>$lng)
 		{
 			$this->insert('faqs', $lng, array('faq_id', $data['faq_id']), 'faq_parent');
 		}
+
+
 	}
 
 
@@ -126,7 +139,7 @@ class multilan_copymodule
 
 		if(!empty($classReset) && $sql->gen($query))
 		{
-			e107::getMessage()->addInfo("Update not possible - translation has already begun on destination article in ".$lng);
+			e107::getMessage()->addInfo("Update not possible - translation has already begun on destination article in ".$lng, 'default', true);
 			return;
 		}
 
@@ -136,7 +149,7 @@ class multilan_copymodule
 
 		if(!$sql->db_Query($query, null, '', true))
 		{
-			e107::getMessage()->addError("Couldn't copy ".$table." to ".$lng." table.");
+			e107::getMessage()->addError("Couldn't copy ".$table." to ".$lng." table.", 'default', true);
 		}
 		else
 		{
@@ -145,7 +158,7 @@ class multilan_copymodule
 			{
 				e107::getMessage()->addError("Couldn't reset translator class for ".$table." :: ".$lng);
 			}
-			e107::getMessage()->addSuccess("Synced changes to ".$table." with ".$lng." table.");
+			e107::getMessage()->addSuccess("Copied # ".intval($pid[1])." into  ".$lng." ".$table." table.", 'default', true);
 		}
 
 
@@ -284,8 +297,19 @@ class multilan_offline
 
 new multilan_offline;
 
+	if(!empty($_GET['__mstto']))
+	{
+		$_SESSION["MULTILAN_BING_LANGUAGE"] =  e107::getParser()->filter($_GET['__mstto'],'w');
 
+		$self = str_replace('?__mstto='.$_GET['__mstto'], '', e_REQUEST_URI);
+		e107::getRedirect()->go($self);
+	}
 
+	if(!empty($_SESSION["MULTILAN_BING_LANGUAGE"]))
+	{
+		define('MULTILAN_BING_LANGUAGE', $_SESSION["MULTILAN_BING_LANGUAGE"]);
+		unset($_SESSION["MULTILAN_BING_LANGUAGE"]);
+	}
 
 
 
