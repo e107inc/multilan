@@ -8,11 +8,89 @@
 * GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 */
 
+
 require_once('../../class2.php');
 if (!getperms('P') || !e107::isInstalled('multilan'))
 {
 	header('location:'.e_BASE.'index.php');
 	exit;
+}
+
+function writeFile($file, $key,$value)
+{
+	$output = '';
+
+	$dir =  dirname($file);
+
+	if(!is_dir($dir))
+	{
+		mkdir($dir, 0755);
+	}
+
+
+	if(!file_exists($file))
+	{
+		$output .= chr(60)."?php\n\n";
+		$output .= "// Bing-Translated Language file \n";
+		$output .= "// Generated for e107 v2.x by the Multi-Language Plugin\n";
+		$output .= "// https://github.com/e107inc/multilan\n\n";
+
+	}
+	else
+	{
+		return false;
+	}
+
+	$output .= 'define("'.$key.'", "'.$value.'");';
+	$output .= "\n";
+
+	file_put_contents($file, $output, FILE_APPEND);
+
+}
+
+if(e_AJAX_REQUEST)
+{
+	$bng = e107::getSingleton('bingTranslate', e_PLUGIN."multilan/bing.class.php");
+
+	$lng = e107::getLanguage();
+
+
+	if(!empty($_GET['lanid']) && !empty($_GET['language']) )
+	{
+		$id             = $_GET['lanid'];
+		$languageCode   = e107::getParser()->filter($_GET['language'], 'w');
+		$language       = $lng->convert($languageCode);
+		$newFile        = str_replace(array('-core-','-plugin-','English'), array(e_LANGUAGEDIR.'English/', e_PLUGIN, $language), $_SESSION['multilan_lanfilelist'][$id]);
+
+
+		$srch = array('en', 'GB', 'US');
+		$repl = array($languageCode, strtoupper($languageCode), strtoupper($languageCode));
+
+		foreach($_SESSION['multilan_lanfiledata'][$id] as $k=>$v)
+		{
+
+			if($k == 'LC_ALL' || $k == 'CORE_LC' || $k == 'CORE_LC2')
+			{
+				$translation = str_replace($srch,$repl, $v);
+			}
+			else
+			{
+				$translation = $bng->getTranslation('en', $languageCode, $v);
+			}
+
+			writeFile($newFile, $k, $translation);
+		}
+
+
+		echo e107::getParser()->toGlyph('fa-check');
+	}
+
+
+
+
+	//echo "Done";
+	exit;
+
 }
 
 
@@ -55,6 +133,7 @@ class multilan_adminArea extends e_admin_dispatcher
 	protected $adminMenu = array(
 		'main/prefs' 	    => array('caption'=> LAN_PREFS, 'perm' => '0'), // Preferences
 		'main/tools'       =>array('caption'=>'Tools', 'perm'=>'0'),
+		'main/translate'         => array('caption'=>'Translate', 'perm'=>'0'),
 		'option2'           => array('divider'=>true),
 		'news/list'			=> array('caption'=> 'News', 'perm' => 'P'),
 		'page/list' 		=> array('caption'=> 'Page', 'perm' => 'P'),
@@ -119,13 +198,14 @@ class status_admin_ui extends e_admin_ui
 			'bing_translator'       => array('title' => 'Frontend Auto-Translator', 'type'=>'dropdown', 'tab'=>2,'writeParms'=>array(0=>'Off', 'auto'=>'Auto', 'notify'=>'Notify')),
 
 			'bing_exclude_installed'=>  array('title' => 'Exclude installed languages', 'type'=>'boolean', 'tab'=>2, 'help'=>"If enabled, will exclude languages currently installed in e107 from the available bing translations."),
-
+			'bing_client_id'    => array('title'=>"Client ID", 'type'=>'text', 'data'=>'str', 'tab'=>2),
+			'bing_client_secret'    => array('title'=>"Client Secret", 'type'=>'text', 'data'=>'str', 'tab'=>2, 'writeParms'=>array('size'=>'xxlarge')),
 		//	'retain sefurls'	  => array('title'=> "Untranslated Class", 'tab'=>0, 'type'=>'userclass' ),
 		);
 
 
 		protected $languageTables = array();
-
+		protected $totalCharCount  = 0;
 
 		function init()
 		{
@@ -473,6 +553,218 @@ class status_admin_ui extends e_admin_ui
 
 
 
+
+
+		public function translatePage()
+		{
+			$frm = e107::getForm();
+			$lng = e107::getLanguage();
+			$bng = e107::getSingleton('bingTranslate', e_PLUGIN."multilan/bing.class.php");
+
+			if(!empty($_GET['lanlanguage']))
+			{
+				$title = $lng->convert($_GET['lanlanguage']);
+			}
+			else
+			{
+				$title = "Choose Language";
+			}
+			$this->addTitle($title);
+
+			$_SESSION['multilan_lanfilelist'] = array();
+
+			$langluageList = $bng->supportedLanguages();
+
+			require_once(e_ADMIN."lancheck.php");
+			$lck = new lancheck;
+			$lck->thirdPartyPlugins(false);
+
+
+			$text = $frm->open('corePage', 'get');
+
+			$text .= "<div class='alert-block'>";
+			$text .= $frm->select('lanlanguage', $langluageList, varset($_GET['lanlanguage']), array('class'=>'filter'), 'Select Language');
+
+			if(!empty($_GET['lanlanguage']))
+			{
+				$text .= "<button type='button' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' value='Download and Install' data-src='".e_SELF."' ><span>Bing Translate</span></button>";
+			}
+			$text .= "</div>";
+
+			$text2 = '';
+
+			if(!empty($_GET['lanlanguage']))
+			{
+				$tmp = $lck->get_comp_lan_phrases(e_LANGUAGEDIR."English/","English",1);
+				unset($tmp['bom']);
+				$text2 .= $this->renderTable($tmp, 'core');
+
+				$tmp2 = $lck->get_comp_lan_phrases(e_PLUGIN,"English",3);
+				unset($tmp2['bom']);
+				$text2 .= $this->renderTable($tmp2, 'plugin');
+			}
+
+			$text2 .= $frm->close();
+
+
+			$js = <<<JS
+
+				$('.e-ajax-post').on('click', function(){
+
+		            var form		= $(this).closest('form').attr('id');
+		            var target 		= $(this).attr('data-target'); // support for input buttons etc.
+		            var loading 	= $(this).attr('data-loading'); // image to show loading.
+		            var handler		= $(this).attr('data-src');
+		     		 // var data 	= $('#'+form).serialize();
+
+					var lancode = $('#lanlanguage').val();
+
+					if(lancode == '')
+					{
+						alert("No Language Selected");
+						return false;
+					}
+
+					$('#' + form).find('.lanfile').each(function(e){
+						val = $(this).text();
+						theid = $(this).attr('id');
+
+						if($('#check-'+theid).is(":not(:checked)")){
+
+	                     //   alert("Checkbox is not checked."+theid);
+	                        return;
+	                    }
+
+					//	$('#status-'+theid).html("<img src='"+loading+"' alt='' />");
+
+						$('#status-'+theid).html('<i class="fa fa-spin fa-spinner"></i>');
+
+				//		 alert(theid);
+					    $.ajax({
+						type: 'get',
+						async: false,
+						url: handler,
+						data: { lanid: theid, language: lancode},
+						success: function(data)
+							{
+									 // 	console.log(data);
+								//	 alert('Done:'+ theid);
+								 $('#status-'+theid).html(data);
+							 }
+						});
+
+
+
+					});
+
+					alert('Complete');
+					return false;
+
+				});
+JS;
+
+
+
+
+
+			e107::js('footer-inline', $js);
+
+
+			$count = ($this->totalCharCount) ? "<div class='right' style='margin-top: -40px; padding: 10px;'><small>Total Chars: ".number_format($this->totalCharCount)."</small></div>" : '';
+
+			return  $text . $count . $text2;
+
+		// 	print_a($tmp);
+
+		}
+
+		private function renderTable($data, $mode)
+		{
+			$frm = e107::getForm();
+			$lng = e107::getLanguage();
+			$languageCode   = e107::getParser()->filter($_GET['lanlanguage'], 'w');
+			$language       = $lng->convert($languageCode);
+
+			if($mode == 'core')
+			{
+				$toggleButton= $frm->checkbox_toggle('tog', 'lancheckbox');
+			}
+			else
+			{
+				$toggleButton= '';
+			}
+
+		//	$toggleButton = '<input name="e-column-toggle" value="jstarget:lancheckbox" class="btn btn-small checkbox toggle-all" type="button" />';
+
+
+			$text = "<table class='table table-striped adminlist'>
+				<colgroup>
+					<col />
+					<col style='width:10%' />
+					<col style='width:50%' />
+				</colgroup>
+				<thead>
+				<tr class='first'>
+				<th>".$toggleButton." <span style='vertical-align: bottom;'>Language File</span></th>
+				<th class='right' style='padding-right:40px'>Character Count</th>
+				<th>".LAN_STATUS."</th></tr>
+				</thead>";
+
+
+
+			foreach($data as $file => $lans)
+			{
+				$id = $frm->name2id($file);
+				$status = '-';
+
+				$_SESSION['multilan_lanfilelist'][$id] = '-'.$mode.'-'.$file;
+				$_SESSION['multilan_lanfiledata'][$id] = $lans;
+
+				$charCount = $this->countChars($lans);
+
+
+				if(!empty($language))
+				{
+
+					$newFile  = str_replace(array('-core-','-plugin-','English'), array(e_LANGUAGEDIR.'English/', e_PLUGIN, $language), $_SESSION['multilan_lanfilelist'][$id]);
+
+					if(file_exists($newFile))
+					{
+						$status = e107::getParser()->toGlyph('fa-check');
+					}
+				}
+
+				$text .= "
+				<tr>
+
+					<td id='".$id."' class='lanfile'>
+						<label class='checkbox'><input name='lancheckbox[]' value='1' id='check-".$id."' type='checkbox'>".$file."</label>
+					</td>
+					<td class='right' style='padding-right:40px'>".$charCount."</td>
+					<td id='status-".$id."'>".$status."</td>
+				</tr>";
+			}
+
+			$text .= "</table>";
+
+			return $text;
+		}
+
+		private function countChars($lans)
+		{
+			$count = 0;
+
+			foreach($lans as $value)
+			{
+				$count += strlen($value);
+			}
+
+			$this->totalCharCount += $count;
+
+			return $count;
+		}
+
+
 		public function toolsPage()
 		{
 
@@ -567,7 +859,7 @@ class status_admin_ui extends e_admin_ui
 				}
 			}
 
-	
+
 			foreach($modeData as $k=>$v)
 			{
 				list($mode,$action) = explode("/",$k);
