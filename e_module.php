@@ -147,7 +147,7 @@ class multilan_copymodule
 	//	$query = "REPLACE INTO `".$lanTable."` ({$keyList}) VALUES ({$valList}) ; ";
 		$query = "REPLACE INTO `".$lanTable."` SELECT * FROM ".MPREFIX.$table." WHERE ".$pid[0]." = ".intval($pid[1])." LIMIT 1";
 
-		if(!$sql->db_Query($query, null, '', true))
+		if(!$sql->db_Query($query, null, '', false))
 		{
 			e107::getMessage()->addError("Couldn't copy ".$table." to ".$lng." table.", 'default', true);
 		}

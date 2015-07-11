@@ -24,6 +24,7 @@ if(!empty($_GET['iframe']))
 
 
 
+
 class multilan_adminArea extends e_admin_dispatcher
 {
 
@@ -72,6 +73,7 @@ class multilan_adminArea extends e_admin_dispatcher
 		'option2'           => array('divider'=>true),
 		'main/prefs' 	    => array('caption'=> LAN_PREFS, 'perm' => '0'), // Preferences
 		'main/tools'       =>array('caption'=>'Tools', 'perm'=>'0'),
+		'main/tables'       => array()
 	);
 
 
@@ -84,9 +86,10 @@ class multilan_adminArea extends e_admin_dispatcher
 
 	function init()
 	{
+		$this->adminMenu['main/tables'] = array('caption'=>'Tables', 'modal-caption'=>'Database Tables', 'perm'=>0, 'modal'=>true, 'uri'=>e_ADMIN.'language.php?mode=main&action=db&iframe=1');
 
 		e107::css('inline', " #etrigger-batch { width: 300px } ");
-	
+
 		$sitelanguage = e107::getPref('sitelanguage');
 		if(e_LANGUAGE != $sitelanguage)
 		{
@@ -101,20 +104,73 @@ class multilan_adminArea extends e_admin_dispatcher
 		{
 			$this->handleAjax();
 		}
+
 	}
 
 
 	private function handleAjax()
 	{
-		if(!empty($_GET['itemid']) && !empty($_GET['language']) &&  !empty($_GET['type']))
+
+
+		if(!empty($_GET['itemid']) && !empty($_GET['language']) &&  !empty($_GET['type']) && !empty($_GET['table']))
 		{
-			echo $this->translateItem($_GET['type'], $_GET['language'], $_GET['itemid']);
+			switch($_GET['type'])
+			{
+				case "copy":
+					if($this->copyItem($_GET['table'], $_GET['language'], $_GET['itemid']))
+					{
+						echo ADMIN_FALSE_ICON;
+					}
+					else
+					{
+						echo ADMIN_WARNING_ICON;
+					}
+					break;
+
+				case "delete":
+					if($this->deleteItem($_GET['table'], $_GET['language'], $_GET['itemid']))
+					{
+						echo '&middot;';
+					}
+					else
+					{
+						echo ADMIN_WARNING_ICON;
+					}
+					break;
+
+				case "bing":
+					if(!$this->copyItem($_GET['table'], $_GET['language'], $_GET['itemid']))
+					{
+						echo ADMIN_WARNING_ICON;
+						exit;
+					}
+
+					if($this->translateItem($_GET['table'], $_GET['language'], $_GET['itemid']))
+					{
+						echo ADMIN_TRUE_ICON;
+					}
+					else
+					{
+						echo ADMIN_WARNING_ICON;
+					}
+					break;
+
+			}
+
+
 		}
 
 
 		if(!empty($_GET['lanid']) && !empty($_GET['language']) )
 		{
-			echo $this->translateFile($_GET['lanid'],$_GET['language']);
+			if($this->translateFile($_GET['lanid'],$_GET['language']))
+			{
+				echo ADMIN_TRUE_ICON; // e107::getParser()->toGlyph('fa-check');
+			}
+			else
+			{
+				echo ADMIN_WARNING_ICON;
+			}
 		}
 
 		exit;
@@ -123,10 +179,204 @@ class multilan_adminArea extends e_admin_dispatcher
 
 
 
-
-	private function translateItem($type,$lan, $id)
+	private function deleteItem($type, $lan, $id)
 	{
-		return  ADMIN_TRUE_ICON;
+
+		$table = '';
+		$pid = '';
+
+		switch($type)
+		{
+			case "news":
+				$table = 'news';
+				$pid = 'news_id';
+
+				break;
+
+			case "page":
+				$table = 'page';
+				$pid = 'page_id';
+
+				break;
+
+			case "faqs":
+				$table = 'faqs';
+				$pid = 'faq_id';
+
+
+				break;
+		}
+
+		if(empty($table) || empty($pid))
+		{
+			return false; // "Invalid";
+		}
+
+		$lanTable = "lan_".strtolower($lan)."_".$table;
+
+		if(e107::getDb()->delete($lanTable, $pid. ' = '.intval($id))) // already exists.
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	/**
+	 * @param $type
+	 * @param $lan
+	 * @param $id
+	 * @return bool
+	 */
+	private function translateItem($type, $lan, $id)
+	{
+
+
+		$table = '';
+		$fields = '';
+		$pid = '';
+
+		switch($type)
+		{
+			case "news":
+				$table = 'news';
+				$pid = 'news_id';
+				$fields = array('news_title', 'news_body', 'news_extended', 'news_meta_description', 'news_summary'); // translatable fields.
+				break;
+
+			case "page":
+				$table = 'page';
+				$pid = 'page_id';
+				$fields = array('page_title', 'page_text', 'menu_title', 'menu_text');
+				break;
+
+			case "faqs":
+				$table = 'faqs';
+				$pid = 'faq_id';
+				$fields = array('faq_question', 'faq_answer');
+
+				break;
+		}
+
+		if(empty($fields) || empty($pid))
+		{
+			return false; // "Invalid";
+		}
+
+		$sql            = e107::getDb();
+		$bng            = e107::getSingleton('bingTranslate', e_PLUGIN."multilan/bing.class.php");
+		$languageCode   = e107::getLanguage()->convert($lan);
+
+		$row = $sql->retrieve($table, implode(",",$fields), $pid. ' = '.intval($id));
+
+		$update = array();
+
+		foreach($row as $field=>$value)
+		{
+			if(!empty($value))
+			{
+				$update[$field] = $bng->getTranslation('en', $languageCode, $value);
+			}
+		}
+
+		if(empty($update))
+		{
+			return false;
+		}
+
+		$update['WHERE'] = $pid.' = '.intval($id). ' LIMIT 1';
+
+		$lanTable = "lan_".strtolower($lan)."_".$table;
+
+		if($sql->update($lanTable, $update))
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+
+	/**
+	 * @param $type
+	 * @param $lan
+	 * @param $id
+	 * @return bool|string
+	 */
+	private function copyItem($type, $lan, $id)
+	{
+
+		if(empty($type))
+		{
+			return "Type not set";
+		}
+
+		if(empty($lan))
+		{
+			return "Language not set";
+		}
+
+		if(empty($id))
+		{
+			return "Item ID not set";
+		}
+
+		$pid = '';
+		$method = '';
+		$table = '';
+
+		switch($type)
+		{
+			case "news":
+				$table = 'news';
+				$pid = 'news_id';
+				$method = 'syncNews';
+				break;
+
+			case "page":
+				$table = 'page';
+				$pid = 'page_id';
+				$method = 'syncPage';
+				break;
+
+			case "faqs":
+				$table = 'faqs';
+				$pid = 'faq_id';
+				$method = 'syncFAQs';
+				break;
+		}
+
+		if(empty($pid) || empty($method) || empty($table))
+		{
+			return false;
+		}
+
+		$lanTable = "lan_".strtolower($lan)."_".$table;
+
+		if(e107::getDb()->select($lanTable,'*', $pid. ' = '.intval($id))) // already exists.
+		{
+			// echo "Already exists";
+			return false;
+		}
+
+
+		$mlan = new multilan_copymodule;
+		$data = array();
+		$data['newData'] = array($pid=>$id);
+		$languages = array($lan);
+
+	//	return print_a($data,true);
+
+
+		$mlan->$method($data, null,  $languages); // eg syncNews.
+
+		e107::getMessage()->resetSession();
+
+		//TODO The Bing translation part.
+
+		return true;
 	}
 
 
@@ -160,7 +410,7 @@ class multilan_adminArea extends e_admin_dispatcher
 		}
 
 
-		return ADMIN_TRUE_ICON; // e107::getParser()->toGlyph('fa-check');
+		return true;
 
 
 	}
@@ -269,14 +519,12 @@ class status_admin_ui extends e_admin_ui
 
 					tmp = $('#etrigger-batch').val().split('_');
 
-					if(tmp[0] != 'bing')
-					{
-						return true;
-					}
 
-					alert('Starting');
+    				$( "#uiAlert" ).html("<div class='alert fade in alert-success'>Processing</div>").show();
+						// .fadeIn({ duration: 3000,  queue: false })
 
-					var type = tmp[1];
+					var type = tmp[0];
+					var table = tmp[1];
 					var lancode = tmp[2];
 					var handler = window.location.href;
 
@@ -314,19 +562,32 @@ class status_admin_ui extends e_admin_ui
 						type: 'get',
 						async: false,
 						url: handler,
-						data: { itemid: id, language: lancode, type: type},
+						data: { itemid: id, language: lancode, table: table, type: type},
 						success: function(data)
 							{
 									 // 	console.log(data);
 								//	 alert('Done:'+ theid);
 								$('#'+indicator).html(data);
+								$(cbox).removeAttr('checked');
+
+							//	$('tr#row-'+id);
 							//	 $('#status-'+theid).html(data);
+
+								//	$('#uiAlert').notify({
+								//		type: 'success',
+				                //        message: { text: 'Completed' },
+				                //        fadeOut: { enabled: true, delay: 2000 }
+				                //    }).show();
+
 							 }
 						});
 
 
 
 					});
+
+					 $('#uiAlert').fadeOut(2000);
+
 
 
 					return false;
@@ -359,7 +620,7 @@ JS;
 		//	e107::getMessage()->addInfo(print_a($value,true));
 
 
-			list($mode,$language) = explode("_",$value);
+			list($mode,$type, $language) = explode("_",$value);
 
 
 			if($mode == 'copy')
@@ -447,6 +708,17 @@ JS;
 				$this->fields[$key] = array('title'=> $key,	'type' => 'method', 	'data' => 'str',  'method'=>'findTranslations',	'width' => '100px',	'thclass' => 'center', 'class'=>'center', 'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 			}
 
+			foreach($languages as $v)
+			{
+				$lowerLang = strtolower($v);
+				if($v == $sitelanguage || !isset($this->languageTables[$lowerLang][MPREFIX.$mode ]))
+				{
+					continue;
+				}
+
+				$this->batchOptions['delete_'.$mode.'_'.$v] = "Delete from ".$v.' table';
+			}
+
 
 			foreach($languages as $v)
 			{
@@ -456,7 +728,7 @@ JS;
 					continue;
 				}
 
-				$this->batchOptions['copy_'.$v] = "Copy ".$sitelanguage." into ".$v.' table';
+				$this->batchOptions['copy_'.$mode.'_'.$v] = "Copy ".$sitelanguage." into ".$v.' table';
 			}
 
 
@@ -638,7 +910,7 @@ JS;
 			$langData = array();
 			foreach($languages as $langu)
 			{
-				if($langu == $sitelanguage || !$sql2->db_Table_exists($this->table,$langu))
+				if($langu == $sitelanguage || !$sql2->isTable($this->table, $langu))
 				{
 					continue;
 				}
@@ -656,7 +928,7 @@ JS;
 					$langData[$key][] = array();
 				}
 			}
-
+			// print_a($langData['fr']);
 
 			return $langData;
 		}
@@ -1052,7 +1324,8 @@ JS;
 			$statusLink     = $this->getController()->statusLink;
 			$statusTitle    = $this->getController()->statusTitle;
 
-		//	print_a($langData);
+			$itemid             = $row[$pid];
+
 		//	print_a($row);
 
 			if(!isset($langData[$langs]))
@@ -1060,9 +1333,13 @@ JS;
 				return "&nbsp;";
 			}
 
+			$language = e107::getLanguage()->convert($langs);
+
+			$text = "&nbsp;&middot;";
+
 			foreach($langData[$langs] as $rw)
 			{
-				$language = e107::getLanguage()->convert($langs);
+
 				if(($rw[$pid]==$row[$pid]))
 				{
 				//	print_a('lang: '.$rw[$transField].' => orig:'.$row[$transField]);
@@ -1070,11 +1347,14 @@ JS;
 					$link = $tp->replaceConstants(str_replace('{ID}', $rw[$pid], $statusLink),'full');
 					$subUrl = $lng->subdomainUrl($langs, $link);
 
-					return  "<span id='status-".$language."-".$rw[$pid]."' class='lanfile'><a class='e-modal' href='".$subUrl."' title=\"".$rw[$statusTitle]."\">".$icon."</a></span>";
+					$text =  "<a class='e-modal' href='".$subUrl."' title=\"".$rw[$statusTitle]."\">".$icon."</a></span>";
+					break;
 				}
 			}
 
-			return "&nbsp;-";
+			return "<span id='status-".$language."-".$itemid ."' class='lanfile'>".$text."</span>";
+
+
 		}
 
 
