@@ -16,82 +16,11 @@ if (!getperms('P') || !e107::isInstalled('multilan'))
 	exit;
 }
 
-function writeFile($file, $key,$value)
+if(!empty($_GET['iframe']))
 {
-	$output = '';
-
-	$dir =  dirname($file);
-
-	if(!is_dir($dir))
-	{
-		mkdir($dir, 0755);
-	}
-
-
-	if(!file_exists($file))
-	{
-		$output .= chr(60)."?php\n\n";
-		$output .= "// Bing-Translated Language file \n";
-		$output .= "// Generated for e107 v2.x by the Multi-Language Plugin\n";
-		$output .= "// https://github.com/e107inc/multilan\n\n";
-
-	}
-	else
-	{
-		return false;
-	}
-
-	$output .= 'define("'.$key.'", "'.$value.'");';
-	$output .= "\n";
-
-	file_put_contents($file, $output, FILE_APPEND);
-
+	define('e_IFRAME', true);
 }
 
-if(e_AJAX_REQUEST)
-{
-	$bng = e107::getSingleton('bingTranslate', e_PLUGIN."multilan/bing.class.php");
-
-	$lng = e107::getLanguage();
-
-
-	if(!empty($_GET['lanid']) && !empty($_GET['language']) )
-	{
-		$id             = $_GET['lanid'];
-		$languageCode   = e107::getParser()->filter($_GET['language'], 'w');
-		$language       = $lng->convert($languageCode);
-		$newFile        = str_replace(array('-core-','-plugin-','English'), array(e_LANGUAGEDIR.'English/', e_PLUGIN, $language), $_SESSION['multilan_lanfilelist'][$id]);
-
-
-		$srch = array('en', 'GB', 'US');
-		$repl = array($languageCode, strtoupper($languageCode), strtoupper($languageCode));
-
-		foreach($_SESSION['multilan_lanfiledata'][$id] as $k=>$v)
-		{
-
-			if($k == 'LC_ALL' || $k == 'CORE_LC' || $k == 'CORE_LC2')
-			{
-				$translation = str_replace($srch,$repl, $v);
-			}
-			else
-			{
-				$translation = $bng->getTranslation('en', $languageCode, $v);
-			}
-
-			writeFile($newFile, $k, $translation);
-		}
-
-
-		echo e107::getParser()->toGlyph('fa-check');
-	}
-
-
-
-
-	//echo "Done";
-	exit;
-
-}
 
 
 
@@ -131,16 +60,18 @@ class multilan_adminArea extends e_admin_dispatcher
 
 
 	protected $adminMenu = array(
-		'main/prefs' 	    => array('caption'=> LAN_PREFS, 'perm' => '0'), // Preferences
-		'main/tools'       =>array('caption'=>'Tools', 'perm'=>'0'),
-		'main/translate'         => array('caption'=>'Translate', 'perm'=>'0'),
-		'option2'           => array('divider'=>true),
+
+
+
 		'news/list'			=> array('caption'=> 'News', 'perm' => 'P'),
 		'page/list' 		=> array('caption'=> 'Page', 'perm' => 'P'),
 		'faqs/list' 		=> array('caption'=> 'FAQs', 'perm' => 'P'),
-
-
-
+		'option3'           => array('divider'=>true),
+		'main/core'         => array('caption'=>'Core Translator', 'perm'=>'0'),
+		'main/editor'         => array('caption'=>'Core Editor', 'perm'=>'0'),
+		'option2'           => array('divider'=>true),
+		'main/prefs' 	    => array('caption'=> LAN_PREFS, 'perm' => '0'), // Preferences
+		'main/tools'       =>array('caption'=>'Tools', 'perm'=>'0'),
 	);
 
 
@@ -153,6 +84,9 @@ class multilan_adminArea extends e_admin_dispatcher
 
 	function init()
 	{
+
+		e107::css('inline', " #etrigger-batch { width: 300px } ");
+	
 		$sitelanguage = e107::getPref('sitelanguage');
 		if(e_LANGUAGE != $sitelanguage)
 		{
@@ -163,8 +97,111 @@ class multilan_adminArea extends e_admin_dispatcher
 			return false;
 		}
 
+		if(e_AJAX_REQUEST)
+		{
+			$this->handleAjax();
+		}
+	}
+
+
+	private function handleAjax()
+	{
+		if(!empty($_GET['itemid']) && !empty($_GET['language']) &&  !empty($_GET['type']))
+		{
+			echo $this->translateItem($_GET['type'], $_GET['language'], $_GET['itemid']);
+		}
+
+
+		if(!empty($_GET['lanid']) && !empty($_GET['language']) )
+		{
+			echo $this->translateFile($_GET['lanid'],$_GET['language']);
+		}
+
+		exit;
 
 	}
+
+
+
+
+	private function translateItem($type,$lan, $id)
+	{
+		return  ADMIN_TRUE_ICON;
+	}
+
+
+	private function translateFile($key, $lan)
+	{
+		$bng = e107::getSingleton('bingTranslate', e_PLUGIN."multilan/bing.class.php");
+		$lng = e107::getLanguage();
+
+		$id             = $_GET['lanid'];
+		$languageCode   = e107::getParser()->filter($_GET['language'], 'w');
+		$language       = $lng->convert($languageCode);
+		$newFile        = str_replace(array('-core-','-plugin-','English'), array(e_LANGUAGEDIR.'English/', e_PLUGIN, $language), $_SESSION['multilan_lanfilelist'][$id]);
+
+
+		$srch = array('en', 'GB', 'US');
+		$repl = array($languageCode, strtoupper($languageCode), strtoupper($languageCode));
+
+		foreach($_SESSION['multilan_lanfiledata'][$id] as $k=>$v)
+		{
+
+			if($k == 'LC_ALL' || $k == 'CORE_LC' || $k == 'CORE_LC2')
+			{
+				$translation = str_replace($srch,$repl, $v);
+			}
+			else
+			{
+				$translation = $bng->getTranslation('en', $languageCode, $v);
+			}
+
+			$this->writeFile($newFile, $k, $translation);
+		}
+
+
+		return ADMIN_TRUE_ICON; // e107::getParser()->toGlyph('fa-check');
+
+
+	}
+
+
+
+
+	private function writeFile($file, $key,$value)
+	{
+		$output = '';
+
+		$dir =  dirname($file);
+
+		if(!is_dir($dir))
+		{
+			mkdir($dir, 0755);
+		}
+
+
+		if(!file_exists($file))
+		{
+			$output .= chr(60)."?php\n\n";
+			$output .= "// Bing-Translated Language file \n";
+			$output .= "// Generated for e107 v2.x by the Multi-Language Plugin\n";
+			$output .= "// https://github.com/e107inc/multilan\n\n";
+
+		}
+		else
+		{
+			return false;
+		}
+
+		$output .= 'define("'.$key.'", "'.$value.'");';
+		$output .= "\n";
+
+		file_put_contents($file, $output, FILE_APPEND);
+
+	}
+
+
+
 }
 
 class status_admin_ui extends e_admin_ui
@@ -226,6 +263,80 @@ class status_admin_ui extends e_admin_ui
 			{
 				return;
 			}
+
+			$js = <<<JS
+				$('#e--execute-batch').on('click', function(){
+
+					tmp = $('#etrigger-batch').val().split('_');
+
+					if(tmp[0] != 'bing')
+					{
+						return true;
+					}
+
+					alert('Starting');
+
+					var type = tmp[1];
+					var lancode = tmp[2];
+					var handler = window.location.href;
+
+					if(lancode == '')
+					{
+						alert("No Language Selected");
+						return false;
+					}
+
+					$('#plugin-multilan-list-form').find('.lanfile').each(function(e){
+
+						var indicator = $(this).attr('id');
+						tmp = indicator.split('-');
+
+						var language = tmp[1];
+						var id = tmp[2];
+
+						if(language != lancode)
+						{
+							return;
+						}
+
+						var cbox = '#multiselect-'+id+'-'+id;
+
+						if($(cbox).is(":not(:checked)")){
+
+	                        return;
+	                    }
+
+						$('#'+indicator).html('<i class="fa fa-spin fa-spinner"></i>');
+
+
+
+					    $.ajax({
+						type: 'get',
+						async: false,
+						url: handler,
+						data: { itemid: id, language: lancode, type: type},
+						success: function(data)
+							{
+									 // 	console.log(data);
+								//	 alert('Done:'+ theid);
+								$('#'+indicator).html(data);
+							//	 $('#status-'+theid).html(data);
+							 }
+						});
+
+
+
+					});
+
+
+					return false;
+				});
+
+
+JS;
+
+			e107::js('footer-inline', $js);
+
 
 
 			if($this->initAll() === false)
@@ -316,8 +427,8 @@ class status_admin_ui extends e_admin_ui
 				return false;
 			}
 
-
-			$initType = 'init'.ucfirst($this->getMode());
+			$mode =$this->getMode();
+			$initType = 'init'.ucfirst($mode);
 
 			$this->$initType(); // eg. initNews();
 
@@ -336,7 +447,6 @@ class status_admin_ui extends e_admin_ui
 				$this->fields[$key] = array('title'=> $key,	'type' => 'method', 	'data' => 'str',  'method'=>'findTranslations',	'width' => '100px',	'thclass' => 'center', 'class'=>'center', 'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 			}
 
-			$mode = $this->getMode();
 
 			foreach($languages as $v)
 			{
@@ -346,7 +456,7 @@ class status_admin_ui extends e_admin_ui
 					continue;
 				}
 
-				$this->batchOptions['copy_'.$v] = "Copy into ".$v.' table';
+				$this->batchOptions['copy_'.$v] = "Copy ".$sitelanguage." into ".$v.' table';
 			}
 
 
@@ -359,7 +469,7 @@ class status_admin_ui extends e_admin_ui
 					continue;
 				}
 
-			//	$this->batchOptions['bing_'.$v] = "Bing-Translate into ".$v." table";
+				$this->batchOptions['bing_'.$mode."_".$v] = "Bing-Translate into ".$v." table";
 			}
 
 
@@ -555,7 +665,7 @@ class status_admin_ui extends e_admin_ui
 
 
 
-		public function translatePage()
+		public function corePage()
 		{
 			$frm = e107::getForm();
 			$lng = e107::getLanguage();
@@ -573,7 +683,9 @@ class status_admin_ui extends e_admin_ui
 
 			$_SESSION['multilan_lanfilelist'] = array();
 
-			$langluageList = $bng->supportedLanguages();
+			$languageList = $bng->supportedLanguages();
+
+			unset($languageList['en']);
 
 			require_once(e_ADMIN."lancheck.php");
 			$lck = new lancheck;
@@ -583,7 +695,7 @@ class status_admin_ui extends e_admin_ui
 			$text = $frm->open('corePage', 'get');
 
 			$text .= "<div class='alert-block'>";
-			$text .= $frm->select('lanlanguage', $langluageList, varset($_GET['lanlanguage']), array('class'=>'filter'), 'Select Language');
+			$text .= $frm->select('lanlanguage', $languageList, varset($_GET['lanlanguage']), array('class'=>'filter'), 'Select Language');
 
 			if(!empty($_GET['lanlanguage']))
 			{
@@ -730,7 +842,7 @@ JS;
 
 					if(file_exists($newFile))
 					{
-						$status = e107::getParser()->toGlyph('fa-check');
+						$status = ADMIN_TRUE_ICON; // e107::getParser()->toGlyph('fa-check');
 					}
 				}
 
@@ -761,8 +873,37 @@ JS;
 
 			$this->totalCharCount += $count;
 
+			if($count > 1500)
+			{
+				return "<span title='high character count' class='label label-important'>".$count."</span>";
+			}
+
 			return $count;
 		}
+
+
+		public function editorPage()
+		{
+
+			$lck = e107::getSingleton('lancheck', e_ADMIN."lancheck.php");
+
+			if($return = $lck->init())
+			{
+				if($return['file'])
+				{
+					$this->addTitle($return['file']);
+				}
+
+				return $return['text'];
+			}
+
+
+			// show_packs();
+
+			return $lck->showLanguagePacks();
+
+		}
+
 
 
 		public function toolsPage()
@@ -921,6 +1062,7 @@ JS;
 
 			foreach($langData[$langs] as $rw)
 			{
+				$language = e107::getLanguage()->convert($langs);
 				if(($rw[$pid]==$row[$pid]))
 				{
 				//	print_a('lang: '.$rw[$transField].' => orig:'.$row[$transField]);
@@ -928,7 +1070,7 @@ JS;
 					$link = $tp->replaceConstants(str_replace('{ID}', $rw[$pid], $statusLink),'full');
 					$subUrl = $lng->subdomainUrl($langs, $link);
 
-					return  "<a class='e-modal' href='".$subUrl."' title=\"".$rw[$statusTitle]."\">".$icon."</a>";
+					return  "<span id='status-".$language."-".$rw[$pid]."' class='lanfile'><a class='e-modal' href='".$subUrl."' title=\"".$rw[$statusTitle]."\">".$icon."</a></span>";
 				}
 			}
 
