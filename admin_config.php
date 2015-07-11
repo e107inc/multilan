@@ -21,6 +21,8 @@ if(!empty($_GET['iframe']))
 	define('e_IFRAME', true);
 }
 
+define('ADMIN_BING_ICON', "<img src='".e_PLUGIN."multilan/images/bing_16.png' alt='auto-translated' />");
+
 
 
 
@@ -147,7 +149,7 @@ class multilan_adminArea extends e_admin_dispatcher
 
 					if($this->translateItem($_GET['table'], $_GET['language'], $_GET['itemid']))
 					{
-						echo ADMIN_TRUE_ICON;
+						echo ADMIN_BING_ICON;
 					}
 					else
 					{
@@ -244,18 +246,21 @@ class multilan_adminArea extends e_admin_dispatcher
 				$table = 'news';
 				$pid = 'news_id';
 				$fields = array('news_title', 'news_body', 'news_extended', 'news_meta_description', 'news_summary'); // translatable fields.
+				$ucfield = 'news_class';
 				break;
 
 			case "page":
 				$table = 'page';
 				$pid = 'page_id';
 				$fields = array('page_title', 'page_text', 'menu_title', 'menu_text');
+				$ucfield = 'page_class';
 				break;
 
 			case "faqs":
 				$table = 'faqs';
 				$pid = 'faq_id';
 				$fields = array('faq_question', 'faq_answer');
+			//	$ucfield = 'page_class';
 
 				break;
 		}
@@ -268,7 +273,7 @@ class multilan_adminArea extends e_admin_dispatcher
 		$sql            = e107::getDb();
 		$bng            = e107::getSingleton('bingTranslate', e_PLUGIN."multilan/bing.class.php");
 		$languageCode   = e107::getLanguage()->convert($lan);
-
+		$tp = e107::getParser();
 		$row = $sql->retrieve($table, implode(",",$fields), $pid. ' = '.intval($id));
 
 		$update = array();
@@ -277,13 +282,36 @@ class multilan_adminArea extends e_admin_dispatcher
 		{
 			if(!empty($value))
 			{
-				$update[$field] = $bng->getTranslation('en', $languageCode, $value);
+				$html = false;
+			//	$newValue = $bng->getTranslation('en', $languageCode, e107::getParser()->toHtml($value,true));
+				if($tp->isHtml($value))
+				{
+					$value = str_replace(array("[html]","[/html]"), "", $value);
+					$html = true;
+				}
+
+				$newValue = $bng->getTranslation('en', $languageCode, $value);
+
+				if($html == true)
+				{
+					$update[$field] = "[html]".$newValue."[/html]";
+				}
+				else
+				{
+					$update[$field] = $newValue;
+				}
 			}
 		}
 
 		if(empty($update))
 		{
 			return false;
+		}
+
+		$autoClass = e107::pref('multilan', 'autotranslatedClass');
+		if(!empty($ucfield) && !empty($autoClass))
+		{
+			$update[$ucfield] = $autoClass;
 		}
 
 		$update['WHERE'] = $pid.' = '.intval($id). ' LIMIT 1';
@@ -479,6 +507,9 @@ class status_admin_ui extends e_admin_ui
 		protected $prefs = array(
 			'syncLanguages'         => array('title'=> "Sync Table Content",  'tab'=>0, 'type'=>'method', 'data'=>'str'),
 			'untranslatedClass'	    => array('title'=> "Untranslated Class", 'tab'=>0, 'type'=>'userclass', 'writeParms'=>array('default'=>'TRANSLATE_ME')),
+			'autotranslatedClass'	    => array('title'=> "Auto-Translated Class", 'tab'=>0, 'type'=>'userclass', 'writeParms'=>array('default'=>'REVIEW_ME')),
+
+
 			'offline_languages'     => array('title' => "Offline", 'tab'=>1, 'type'=>'method', 'data'=>'str'),
 			'offline_excludeadmins' => array('title'=>'Exclude Admins from redirect', 'tab'=>1, 'type'=>'boolean'),
 			'language_navigation'    => array('title'=>"Language Navigation", 'type'=>'method', 'tab'=>1),
@@ -731,19 +762,20 @@ JS;
 				$this->batchOptions['copy_'.$mode.'_'.$v] = "Copy ".$sitelanguage." into ".$v.' table';
 			}
 
-
-
-			foreach($languages as $v)
+			$bingClient = e107::pref('multilan', 'bing_client_id');
+			if(!empty($bingClient))
 			{
-				$lowerLang = strtolower($v);
-				if($v == $sitelanguage || !isset($this->languageTables[$lowerLang][MPREFIX.$mode ]))
+				foreach($languages as $v)
 				{
-					continue;
+					$lowerLang = strtolower($v);
+					if($v == $sitelanguage || !isset($this->languageTables[$lowerLang][MPREFIX.$mode ]))
+					{
+						continue;
+					}
+
+					$this->batchOptions['bing_'.$mode."_".$v] = "Translate into ".$v." table";
 				}
-
-				$this->batchOptions['bing_'.$mode."_".$v] = "Bing-Translate into ".$v." table";
 			}
-
 
 
 
@@ -1343,7 +1375,8 @@ JS;
 				if(($rw[$pid]==$row[$pid]))
 				{
 				//	print_a('lang: '.$rw[$transField].' => orig:'.$row[$transField]);
-					$icon = ($rw[$transField] == $row[$transField]) ?  ADMIN_TRUE_ICON : ADMIN_FALSE_ICON;
+				//	$icon = ($rw[$transField] == $row[$transField]) ?  ADMIN_TRUE_ICON : ADMIN_FALSE_ICON;
+					$icon = $this->getStatusIcon($rw,$row);
 					$link = $tp->replaceConstants(str_replace('{ID}', $rw[$pid], $statusLink),'full');
 					$subUrl = $lng->subdomainUrl($langs, $link);
 
@@ -1355,6 +1388,24 @@ JS;
 			return "<span id='status-".$language."-".$itemid ."' class='lanfile'>".$text."</span>";
 
 
+		}
+
+		function getStatusIcon($rw,$row)
+		{
+			$transField     = $this->getController()->statusField;
+			$reviewField    = e107::pref('multilan','autotranslatedClass');
+
+			if($rw[$transField] == $reviewField)
+			{
+				return ADMIN_BING_ICON;
+			}
+
+			if($rw[$transField] == $row[$transField])
+			{
+				return ADMIN_TRUE_ICON;
+			}
+
+			return ADMIN_FALSE_ICON;
 		}
 
 

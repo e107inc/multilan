@@ -136,7 +136,7 @@
 
 		public function getURL($fromLanguage, $toLanguage, $text)
 		{
-			return 'http://api.microsofttranslator.com/v2/Http.svc/Translate?text='.urlencode($text).'&to='.$toLanguage.'&from='.$fromLanguage;
+			return 'http://api.microsofttranslator.com/v2/Http.svc/Translate?text='.urlencode($text).'&to='.$toLanguage.'&from='.$fromLanguage.'&contentType=text/plain';
 		}
 
 

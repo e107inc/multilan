@@ -17,5 +17,6 @@
     </siteLinks>
     <userClasses>
         <class name="TRANSLATE_ME" description="Items requiring translation and the team members who do it." />
+        <class name="REVIEW_ME" description="Items that have been auto-translated and require reivew and the team members who do it." />
     </userClasses>
 </e107Plugin>
