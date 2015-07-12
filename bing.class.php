@@ -16,6 +16,8 @@
 		private $_type          = 'client_credentials';
 		private $_token         = '';
 		private $_url           = 'http://api.microsofttranslator.com';
+		private $_urlPost       = 'http://api.microsofttranslator.com/v2/Http.svc/TranslateArray';
+		private $_method        = 'post';
 
 		public function __construct()
 		{
@@ -123,17 +125,33 @@
 
 		public function getTranslation($fromLanguage, $toLanguage, $text)
 		{
-			$response = $this->getResponse($this->getURL($fromLanguage, $toLanguage, $text));
 
-			$response = strip_tags($response);
+			if($this->_method == 'get')
+			{
+				$response = $this->getResponse($this->getURL($fromLanguage, $toLanguage, $text));
+				$response = strip_tags($response);
+				$decoded = html_entity_decode($response, null, 'UTF-8');
+			}
+			else // 'post'
+			{
+				$requestXml = $this->createXMLRequest($fromLanguage, $toLanguage, $text, 'text/html');
+				$decoded = $this->getXMLResponse($requestXml);
+			}
 
-			$decoded = html_entity_decode($response, null, 'UTF-8');
+
 
 			return $decoded;
 
 		}
 
 
+		/**
+		 * Generated 'get' URL request.
+		 * @param $fromLanguage
+		 * @param $toLanguage
+		 * @param $text
+		 * @return string
+		 */
 		public function getURL($fromLanguage, $toLanguage, $text)
 		{
 			return 'http://api.microsofttranslator.com/v2/Http.svc/Translate?text='.urlencode($text).'&to='.$toLanguage.'&from='.$fromLanguage.'&contentType=text/plain';
@@ -141,4 +159,138 @@
 
 
 
-	}
+		/**
+		 * Create Request XML Format.
+		 *
+		 * @param string $fromLanguage   Source language Code.
+		 * @param string $toLanguage     Target language Code.
+		 * @param string $contentType    Content Type.
+		 * @param string $inputStrArr    Input String Array.
+		 *
+		 * @return string.
+		 */
+		function createXMLRequest($fromLanguage, $toLanguage,  $inputStr, $contentType)
+		{
+
+			if(is_string($inputStr))
+			{
+				$data = array($inputStr);
+			}
+			else
+			{
+				$data = $inputStr;
+			}
+
+		//	$inputStr = urlencode($inputStr);
+
+			//Create the XML string for passing the values.
+			$requestXml = "<TranslateArrayRequest>".
+				"<AppId/>".
+				"<From>$fromLanguage</From>".
+				"<Options>" .
+				"<Category xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" .
+				"<ContentType xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\">".$contentType."</ContentType>" .
+				"<ReservedFlags xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" .
+				"<State xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" .
+				"<Uri xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" .
+				"<User xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" .
+				"</Options>" .
+				"<Texts>";
+
+				foreach($data as $str)
+				{
+					$str = htmlspecialchars($str);
+					$requestXml .=  "<string xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\">".$str."</string>" ;
+				}
+
+			$requestXml .= "</Texts>".
+				"<To>$toLanguage</To>" .
+				"</TranslateArrayRequest>";
+
+
+			//print_a($requestXml);
+			return $requestXml;
+		}
+
+
+
+
+
+
+
+
+		function getXMLResponse($postData='')
+		{
+
+			if(empty($postData))
+			{
+				return '';
+			}
+
+			$authHeader = "Authorization: Bearer ". $this->getToken();
+			$url = $this->_urlPost;
+			$ch = curl_init();
+
+			curl_setopt ($ch, CURLOPT_URL, $url);
+		//	curl_setopt ($ch, CURLOPT_HTTPHEADER, array($authHeader,"Content-Type: text/xml"));
+			curl_setopt ( $ch, CURLOPT_HTTPHEADER, array ($authHeader,'Content-Type: application/xml; charset=UTF-8' ) );
+			curl_setopt ($ch, CURLOPT_RETURNTRANSFER, TRUE);
+			curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, False);
+
+			if($postData)
+			{
+				curl_setopt($ch, CURLOPT_POST, TRUE);
+				curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+			}
+
+			$curlResponse = curl_exec($ch);
+
+			$curlErrno = curl_errno($ch);
+			if ($curlErrno)
+			{
+				$curlError = curl_error($ch);
+				throw new Exception($curlError);
+			}
+			else
+			{
+				// print_a($curlResponse);
+				$xml = e107::getXml();
+				$xml->setOptArrayTags('TranslateArrayResponse');
+
+				$tmp = $xml->parseXml($curlResponse, true);
+
+				if(!empty($tmp['TranslateArrayResponse'][0]))
+				{
+					if(empty($tmp['TranslateArrayResponse'][1])) // returna string
+					{
+						$text = $tmp['TranslateArrayResponse'][0]['TranslatedText'];
+						$text = html_entity_decode($text, null, 'UTF-8');
+					}
+					else
+					{
+						$ret = array();
+						foreach($tmp['TranslateArrayResponse'] as $val)
+						{
+							$ret[] = html_entity_decode($val['TranslatedText'], null, 'UTF-8');
+						}
+						$text = $ret; // returnan array.
+					}
+				}
+				else
+				{
+					$text = '';
+				}
+
+
+			}
+
+			curl_close($ch);
+			return $text;
+
+
+		}
+
+
+
+}
+
