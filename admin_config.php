@@ -285,7 +285,7 @@ class multilan_adminArea extends e_admin_dispatcher
 			{
 				$html = false;
 			//	$newValue = $bng->getTranslation('en', $languageCode, e107::getParser()->toHtml($value,true));
-				if($tp->isHtml($value))
+				if(strpos($value, '[html]')!==false)
 				{
 					$value = str_replace(array("[html]","[/html]"), "", $value);
 					$html = true;
@@ -293,7 +293,7 @@ class multilan_adminArea extends e_admin_dispatcher
 
 				$newValue = $bng->getTranslation('en', $languageCode, $value);
 
-				if($html == true)
+				if($html === true)
 				{
 					$update[$field] = "[html]".$newValue."[/html]";
 				}
