@@ -640,7 +640,8 @@ JS;
 
 		}
 
-
+/*
+ *      //XXX No longer used - using ajax now.
 		function handleListBatch($selected, $value)
 		{
 
@@ -696,6 +697,7 @@ JS;
 				e107::getRedirect()->go(e_REQUEST_URI);
 			}
 		}
+*/
 
 
 		/**
@@ -1367,7 +1369,7 @@ JS;
 
 			$language = e107::getLanguage()->convert($langs);
 
-			$text = "&nbsp;&middot;";
+			$text = "<b>&middot;</b>";
 
 			foreach($langData[$langs] as $rw)
 			{
