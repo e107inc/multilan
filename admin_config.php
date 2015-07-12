@@ -143,8 +143,9 @@ class multilan_adminArea extends e_admin_dispatcher
 				case "bing":
 					if(!$this->copyItem($_GET['table'], $_GET['language'], $_GET['itemid']))
 					{
-						echo ADMIN_WARNING_ICON;
-						exit;
+						//echo ADMIN_WARNING_ICON;
+						//exit;
+
 					}
 
 					if($this->translateItem($_GET['table'], $_GET['language'], $_GET['itemid']))
