@@ -423,21 +423,23 @@ class multilan_adminArea extends e_admin_dispatcher
 		$srch = array('en', 'GB', 'US');
 		$repl = array($languageCode, strtoupper($languageCode), strtoupper($languageCode));
 
-		foreach($_SESSION['multilan_lanfiledata'][$id] as $k=>$v)
+
+		$toTranslate = $_SESSION['multilan_lanfiledata'][$id];
+
+		foreach($toTranslate as $k=>$v)
 		{
 
 			if($k == 'LC_ALL' || $k == 'CORE_LC' || $k == 'CORE_LC2')
 			{
 				$translation = str_replace($srch,$repl, $v);
+				$this->writeFile($newFile, $k, $translation, 'setlocale');
+				unset($toTranslate[$k]); // remove from the list.
+				break;
 			}
-			else
-			{
-				$translation = $bng->getTranslation('en', $languageCode, $v);
-			}
-
-			$this->writeFile($newFile, $k, $translation);
 		}
 
+		$transArray = $bng->getTranslation('en', $languageCode, $toTranslate, true);
+		$this->writeFile($newFile, $transArray);
 
 		return true;
 
@@ -447,7 +449,7 @@ class multilan_adminArea extends e_admin_dispatcher
 
 
 
-	private function writeFile($file, $key,$value)
+	private function writeFile($file, $key, $value='', $opt = '')
 	{
 		$output = '';
 
@@ -469,11 +471,23 @@ class multilan_adminArea extends e_admin_dispatcher
 		}
 		else
 		{
-			return false;
+		//	return false;
 		}
 
-		$output .= 'define("'.$key.'", "'.$value.'");';
-		$output .= "\n";
+		if(is_array($key))
+		{
+			foreach($key as $k=>$v)
+			{
+
+				$output .= 'define("'.$k.'", "'.$v.'");';
+				$output .= "\n";
+			}
+		}
+		else
+		{
+			$output .= ($opt == 'setlocale') ? 'setlocale('.$key.', '.$value.');' : 'define("'.$key.'", "'.$value.'");';
+			$output .= "\n";
+		}
 
 		file_put_contents($file, $output, FILE_APPEND);
 
@@ -517,7 +531,7 @@ class status_admin_ui extends e_admin_ui
 			'bing_translator'       => array('title' => 'Frontend Auto-Translator', 'type'=>'dropdown', 'tab'=>2,'writeParms'=>array(0=>'Off', 'auto'=>'Auto', 'notify'=>'Notify')),
 
 			'bing_exclude_installed'=>  array('title' => 'Exclude installed languages', 'type'=>'boolean', 'tab'=>2, 'help'=>"If enabled, will exclude languages currently installed in e107 from the available bing translations."),
-			'bing_client_id'    => array('title'=>"Client ID", 'type'=>'text', 'data'=>'str',  'tab'=>2,  'writeParms'=>array('rightCellClass'=>'form-inline','post'=>" <a class='btn btn-primary btn-mini btn-xs' target='_blank' href='https://msdn.microsoft.com/en-us/library/mt146806.aspx'>More Info.</a>")),
+			'bing_client_id'    => array('title'=>"Client ID", 'type'=>'text', 'data'=>'str',  'tab'=>2,  'writeParms'=>array('tdClassRight'=>'form-inline','post'=>" <a class='btn btn-primary btn-mini btn-xs' target='_blank' href='https://msdn.microsoft.com/en-us/library/mt146806.aspx'>More Info.</a>")),
 			'bing_client_secret'    => array('title'=>"Client Secret", 'type'=>'text', 'data'=>'str', 'tab'=>2, 'writeParms'=>array('size'=>'xxlarge')),
 		//	'retain sefurls'	  => array('title'=> "Untranslated Class", 'tab'=>0, 'type'=>'userclass' ),
 		);

@@ -18,6 +18,7 @@
 		private $_url           = 'http://api.microsofttranslator.com';
 		private $_urlPost       = 'http://api.microsofttranslator.com/v2/Http.svc/TranslateArray';
 		private $_method        = 'post';
+		private $_paragraphs    = false;
 
 		public function __construct()
 		{
@@ -123,7 +124,7 @@
 		}
 
 
-		public function getTranslation($fromLanguage, $toLanguage, $text)
+		public function getTranslation($fromLanguage, $toLanguage, $text, $returnArray=false)
 		{
 
 			if($this->_method == 'get')
@@ -134,9 +135,55 @@
 			}
 			else // 'post'
 			{
-				$requestXml = $this->createXMLRequest($fromLanguage, $toLanguage, $text, 'text/html');
-				$decoded = $this->getXMLResponse($requestXml);
+				if(is_array($text))
+				{
+					$textArray = $text;
+					$arrayKeys = array_keys($text);
+				}
+				else
+				{
+					$textArray = $this->getParagraphs($text);
+				}
+
+				$requestXml = $this->createXMLRequest($fromLanguage, $toLanguage, $textArray, 'text/html');
+				$transArray = $this->getXMLResponse($requestXml);
+
+			//	$transArray = $textArray;
+
+				if($this->_paragraphs == true)
+				{
+					$decoded = '';
+					foreach($transArray as $val)
+					{
+						$decoded .= "<p>".$val."</p>\n";
+					}
+				}
+				else
+				{
+					$decoded = implode("\n", $transArray);
+				}
+
+				if($returnArray === true)
+				{
+
+					if(!empty($arrayKeys)) // keep original array keys intact.
+					{
+						$newArray = array();
+						foreach($transArray as $k=>$v)
+						{
+							$newkey = $arrayKeys[$k];
+
+							$newArray[$newkey] = $v;
+						}
+
+						return $newArray;
+					}
+
+					return $transArray;
+				}
 			}
+
+
 
 
 
@@ -208,7 +255,7 @@
 				"</TranslateArrayRequest>";
 
 
-			//print_a($requestXml);
+		//	print_a($requestXml);
 			return $requestXml;
 		}
 
@@ -226,6 +273,8 @@
 			{
 				return '';
 			}
+
+			$ret = array();
 
 			$authHeader = "Authorization: Bearer ". $this->getToken();
 			$url = $this->_urlPost;
@@ -245,11 +294,16 @@
 
 			$curlResponse = curl_exec($ch);
 
+			file_put_contents(e_LOG."multilan_bing.log", "\n\n\n".$curlResponse, FILE_APPEND);
+
 			$curlErrno = curl_errno($ch);
 			if ($curlErrno)
 			{
 				$curlError = curl_error($ch);
+
+
 				throw new Exception($curlError);
+
 			}
 			else
 			{
@@ -261,36 +315,47 @@
 
 				if(!empty($tmp['TranslateArrayResponse'][0]))
 				{
-					if(empty($tmp['TranslateArrayResponse'][1])) // returna string
+					foreach($tmp['TranslateArrayResponse'] as $val)
 					{
-						$text = $tmp['TranslateArrayResponse'][0]['TranslatedText'];
-						$text = html_entity_decode($text, null, 'UTF-8');
+						$ret[] = html_entity_decode($val['TranslatedText'], null, 'UTF-8');
 					}
-					else
-					{
-						$ret = array();
-						foreach($tmp['TranslateArrayResponse'] as $val)
-						{
-							$ret[] = html_entity_decode($val['TranslatedText'], null, 'UTF-8');
-						}
-						$text = $ret; // returnan array.
-					}
-				}
-				else
-				{
-					$text = '';
 				}
 
 
 			}
 
 			curl_close($ch);
-			return $text;
+			return (!empty($ret)) ? $ret : '';
 
 
 		}
 
 
+
+		function getParagraphs($sourceText)
+		{
+			$matches = array ();
+
+			$pattern = '/.*<P>(.*)<\/P>/iU';
+			$result = preg_match_all($pattern, $sourceText, $matches );
+
+			if (false === $result)
+			{
+				die( 'preg_match_all failed' );
+			}
+
+			if ($result == 0) // plain text, not HTML paragraphs.
+			{
+				$matches[1] = explode("\n", $sourceText);
+			}
+			else
+			{
+				$this->_paragraphs = true;
+			}
+
+			return $matches[1];
+
+		}
 
 }
 
