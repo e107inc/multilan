@@ -420,8 +420,13 @@ class multilan_adminArea extends e_admin_dispatcher
 		$newFile        = str_replace(array('-core-','-plugin-','English'), array(e_LANGUAGEDIR.'English/', e_PLUGIN, $language), $_SESSION['multilan_lanfilelist'][$id]);
 
 
-		$srch = array('en', 'GB', 'US');
-		$repl = array($languageCode, strtoupper($languageCode), strtoupper($languageCode));
+		if(file_exists($newFile))
+		{
+			return false;
+		}
+
+		$srch = array('en', 'GB', 'US', 'gb');
+		$repl = array($languageCode, strtoupper($languageCode), strtoupper($languageCode), $languageCode);
 
 
 		$toTranslate = $_SESSION['multilan_lanfiledata'][$id];
@@ -432,9 +437,10 @@ class multilan_adminArea extends e_admin_dispatcher
 			if($k == 'LC_ALL' || $k == 'CORE_LC' || $k == 'CORE_LC2')
 			{
 				$translation = str_replace($srch,$repl, $v);
-				$this->writeFile($newFile, $k, $translation, 'setlocale');
+				$wmode = ($k == 'LC_ALL') ? 'setlocale' : '';
+				$this->writeFile($newFile, $k, $translation, $wmode);
 				unset($toTranslate[$k]); // remove from the list.
-				break;
+				//break;
 			}
 		}
 
@@ -478,7 +484,7 @@ class multilan_adminArea extends e_admin_dispatcher
 		{
 			foreach($key as $k=>$v)
 			{
-
+				$v = str_replace('"', "'", $v);
 				$output .= 'define("'.$k.'", "'.$v.'");';
 				$output .= "\n";
 			}
@@ -549,6 +555,10 @@ class status_admin_ui extends e_admin_ui
 			{
 				$this->initFaqsPrefs();
 			}
+
+
+
+
 
 			if(!empty($_POST['generate_lanlinks']))
 			{
@@ -1000,6 +1010,7 @@ JS;
 			{
 				$title = "Choose Language";
 			}
+
 			$this->addTitle($title);
 
 			$_SESSION['multilan_lanfilelist'] = array();
@@ -1013,14 +1024,21 @@ JS;
 			$lck->thirdPartyPlugins(false);
 
 
-			$text = $frm->open('corePage', 'get');
+			$text = $frm->open('corePage', 'get', e_SELF);
+			$text .= $frm->hidden('mode', 'main');
+			$text .= $frm->hidden('action', 'core');
 
-			$text .= "<div class='alert-block'>";
-			$text .= $frm->select('lanlanguage', $languageList, varset($_GET['lanlanguage']), array('class'=>'filter'), 'Select Language');
 
-			if(!empty($_GET['lanlanguage']))
+			$text .= "<div class='alert-block' style='margin-bottom:10px'>";
+
+			if(empty($_GET['lanlanguage']))
 			{
-				$text .= "<button type='button' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' value='Download and Install' data-src='".e_SELF."' ><span>Bing Translate</span></button>";
+				$text .= $frm->select('lanlanguage', $languageList, varset($_GET['lanlanguage']), array('class'=>'filter'), 'Select Language');
+			}
+			else
+			{
+				$text .= $frm->hidden('lanlanguage',$_GET['lanlanguage'],array('id'=>'lanlanguage'));
+				$text .= "<button type='button btn btn-default' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' value='Download and Install' data-src='".e_SELF."' ><span>Bing Translate</span></button>";
 			}
 			$text .= "</div>";
 
@@ -1052,11 +1070,12 @@ JS;
 
 					var lancode = $('#lanlanguage').val();
 
-					if(lancode == '')
+					if(lancode == '' || lancode === undefined)
 					{
 						alert("No Language Selected");
 						return false;
 					}
+
 
 					$('#' + form).find('.lanfile').each(function(e){
 						val = $(this).text();
@@ -1111,6 +1130,8 @@ JS;
 
 		}
 
+
+
 		private function renderTable($data, $mode)
 		{
 			$frm = e107::getForm();
@@ -1155,7 +1176,6 @@ JS;
 
 				$charCount = $this->countChars($lans);
 
-
 				if(!empty($language))
 				{
 
@@ -1196,7 +1216,7 @@ JS;
 
 			if($count > 1500)
 			{
-				return "<span title='high character count' class='label label-important'>".$count."</span>";
+				return "<span title='high character count' class='label label-important label-danger'>".$count."</span>";
 			}
 
 			return $count;
@@ -1207,6 +1227,7 @@ JS;
 		{
 
 			$lck = e107::getSingleton('lancheck', e_ADMIN."lancheck.php");
+
 
 			if($return = $lck->init())
 			{
