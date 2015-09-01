@@ -168,7 +168,7 @@ class multilan_adminArea extends e_admin_dispatcher
 		{
 			if($this->translateFile($_GET['lanid'],$_GET['language']))
 			{
-				echo ADMIN_TRUE_ICON; // e107::getParser()->toGlyph('fa-check');
+				echo ADMIN_BING_ICON; // e107::getParser()->toGlyph('fa-check');
 			}
 			else
 			{
@@ -1038,7 +1038,7 @@ JS;
 			else
 			{
 				$text .= $frm->hidden('lanlanguage',$_GET['lanlanguage'],array('id'=>'lanlanguage'));
-				$text .= "<button type='button btn btn-default' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' value='Download and Install' data-src='".e_SELF."' ><span>Bing Translate</span></button>";
+				$text .= "<button type='button' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' value='Download and Install' data-src='".e_SELF."' ><span>Bing Translate</span></button>";
 			}
 			$text .= "</div>";
 
@@ -1357,7 +1357,7 @@ JS;
 				{
 					if(empty($tableInstalled[$mode][$opt]))
 					{
-						$lanOpts[$opt] .= ' (not installed)' ; // " <span class='label label-warning'>Not installed</span>";
+						$lanOpts[$opt] .= " (not installed)" ; // " <span class='label label-warning'>Not installed</span>";
 					}
 				}
 

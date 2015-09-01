@@ -56,7 +56,7 @@ class multilan_sitelink // include plugin-folder in the name.
 
 				$name = $lng->toNative($ln);
 
-				if(isset($activeLangs[$ln]) && empty($activeLangs[$ln]))
+				if(!isset($activeLangs[$ln]) || empty($activeLangs[$ln]))
 				{
 					if(!ADMIN)
 					{
