@@ -90,6 +90,24 @@ class multilan_copymodule
 		}
 	}
 
+	function syncGeneric($data, $event = '', $languages=array())
+	{
+
+		if($this->wrongLanguage())
+		{
+			return false;
+		}
+
+		$data = $data['newData'];
+
+		$langs = (empty($languages)) ? $this->languages['generic'] : $languages;
+
+		foreach($langs as $k=>$lng)
+		{
+			$this->insert('generic', $lng, array('gen_id', $data['gen_id']), 'gen_intdata', "gen_type='wmessage'");
+		}
+	}
+
 
 	function syncFaqs($data, $event='', $languages = array())
 	{
@@ -126,7 +144,7 @@ class multilan_copymodule
 	 * @param array $pid Primary ID eg. array('news_id', $val)
 	 * @param string $classReset eg. news_class
 	 */
-	function insert($table, $lng, $pid=array(), $classReset='')
+	function insert($table, $lng, $pid=array(), $classReset='', $filter='')
 	{
 		$sql        = e107::getDb();
 		$tp         = e107::getParser();
@@ -145,7 +163,9 @@ class multilan_copymodule
 
 
 	//	$query = "REPLACE INTO `".$lanTable."` ({$keyList}) VALUES ({$valList}) ; ";
-		$query = "REPLACE INTO `".$lanTable."` SELECT * FROM ".MPREFIX.$table." WHERE ".$pid[0]." = ".intval($pid[1])." LIMIT 1";
+		$query = "REPLACE INTO `".$lanTable."` SELECT * FROM ".MPREFIX.$table." WHERE ".$pid[0]." = ".intval($pid[1])." ";
+		$query .= ($filter) ? " AND ".$filter." " : '';
+		$query .= "LIMIT 1";
 
 		if(!$sql->db_Query($query, null, '', false))
 		{

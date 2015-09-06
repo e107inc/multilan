@@ -8,8 +8,11 @@
 * GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 */
 
+define('e_PAGE_LANGUAGE', 'E_SITELANGUAGE'); // Force language as english.
+$_E107['no_language_perm_check'] = true;
 
 require_once('../../class2.php');
+
 if (!getperms('P') || !e107::isInstalled('multilan'))
 {
 	header('location:'.e_BASE.'index.php');
@@ -22,8 +25,12 @@ if(!empty($_GET['iframe']))
 }
 
 define('ADMIN_BING_ICON', "<img src='".e_PLUGIN."multilan/images/bing_16.png' alt='auto-translated' />");
+define('ADMIN_FLAG_ICON', "<img src='".e_PLUGIN."multilan/images/flag_16.png' alt='un-translated' />");
 
-
+e107::css('inline', " .help-table td {
+        padding:7px 0;
+ }
+ ");
 
 
 
@@ -39,6 +46,13 @@ class multilan_adminArea extends e_admin_dispatcher
 			'perm'          => null
 		),
 		'page'		=> array(
+			'controller' 	=> 'status_admin_ui',
+			'path' 			=> null,
+			'ui' 			=> 'status_form_ui',
+			'uipath' 		=> null,
+			'perm'          => null
+		),
+		'generic'		=> array(
 			'controller' 	=> 'status_admin_ui',
 			'path' 			=> null,
 			'ui' 			=> 'status_form_ui',
@@ -69,10 +83,11 @@ class multilan_adminArea extends e_admin_dispatcher
 		'news/list'			=> array('caption'=> 'News', 'perm' => 'P'),
 		'page/list' 		=> array('caption'=> 'Page', 'perm' => 'P'),
 		'faqs/list' 		=> array('caption'=> 'FAQs', 'perm' => 'P'),
-		'option3'           => array('divider'=>true),
+		'generic/list' 		=> array('caption'=> 'Welcome Message', 'perm' => 'P'),
+		'option3'           => array('divider'=>true, 'perm'=>'0'),
 		'main/core'         => array('caption'=>'Core Translator', 'perm'=>'0'),
 		'main/editor'         => array('caption'=>'Core Editor', 'perm'=>'0'),
-		'option2'           => array('divider'=>true),
+		'option2'           => array('divider'=>true, 'perm'=>'0'),
 		'main/prefs' 	    => array('caption'=> LAN_PREFS, 'perm' => '0'), // Preferences
 		'main/tools'       =>array('caption'=>'Tools', 'perm'=>'0'),
 		'main/tables'       => array()
@@ -121,7 +136,7 @@ class multilan_adminArea extends e_admin_dispatcher
 				case "copy":
 					if($this->copyItem($_GET['table'], $_GET['language'], $_GET['itemid']))
 					{
-						echo ADMIN_FALSE_ICON;
+						echo ADMIN_FLAG_ICON;
 					}
 					else
 					{
@@ -137,6 +152,17 @@ class multilan_adminArea extends e_admin_dispatcher
 					else
 					{
 						echo ADMIN_WARNING_ICON;
+					}
+					break;
+
+				case "class":
+					if($this->classItem($_GET['table'], $_GET['language'], $_GET['itemid']))
+					{
+						echo ADMIN_FLAG_ICON;
+					}
+					else
+					{
+						echo ADMIN_FALSE_ICON;
 					}
 					break;
 
@@ -181,6 +207,132 @@ class multilan_adminArea extends e_admin_dispatcher
 	}
 
 
+	private function publicItem($type,$lan,$id)
+	{
+		$table = '';
+		$pid = '';
+
+		switch($type)
+		{
+			case "news":
+				$table = 'news';
+				$pid = 'news_id';
+
+				break;
+
+			case "page":
+				$table = 'page';
+				$pid = 'page_id';
+
+				break;
+
+			case "generic":
+				$table = 'generic';
+				$pid = 'gen_id';
+
+				break;
+
+			case "faqs":
+				$table = 'faqs';
+				$pid = 'faq_id';
+
+
+				break;
+		}
+
+		if(empty($table) || empty($pid))
+		{
+			return false; // "Invalid";
+		}
+
+		$lanTable = "lan_".strtolower($lan)."_".$table;
+
+		if(e107::getDb()->update($lanTable, $pid. ' = '.intval($id))) // already exists.
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+
+	}
+
+
+	private function classItem($type, $lan, $id)
+	{
+
+		$table = '';
+		$pid = '';
+
+
+		switch($type)
+		{
+			case "news":
+				$table = 'news';
+				$pid = 'news_id';
+
+				break;
+
+			case "page":
+				$table = 'page';
+				$pid = 'page_id';
+
+				break;
+
+			case "generic":
+				$table = 'generic';
+				$pid = 'gen_id';
+
+				break;
+
+			case "faqs":
+				$table = 'faqs';
+				$pid = 'faq_id';
+
+
+				break;
+		}
+
+
+		$uclass = $this->getVisibilityField($type);
+
+		if(empty($table) || empty($pid))
+		{
+			return false; // "Invalid";
+		}
+
+		$lanTable = "lan_".strtolower($lan)."_".$table;
+
+		if($type == 'faqs')
+		{
+			$value = e107::pref('multilan','untranslatedFAQCat', 1);
+		}
+		else
+		{
+			$value = e107::pref('multilan','untranslatedClass', 0);
+		}
+
+
+
+		$qry =  $uclass." = ".$value." WHERE  ". $pid. ' = '.intval($id);
+
+
+
+		if(e107::getDb()->update($lanTable,$qry)) // already exists.
+		{
+			e107::getLog()->addDebug("Attempting to Update visibility\nQuery: ".$qry);
+			$this->logAjax();
+			return true;
+		}
+		else
+		{
+			e107::getLog()->addDebug("Attempting to Update visibility\nQuery: ".$qry);
+			$this->logAjax();
+			return false;
+		}
+	}
+
 
 	private function deleteItem($type, $lan, $id)
 	{
@@ -199,6 +351,12 @@ class multilan_adminArea extends e_admin_dispatcher
 			case "page":
 				$table = 'page';
 				$pid = 'page_id';
+
+				break;
+
+			case "generic":
+				$table = 'generic';
+				$pid = 'gen_id';
 
 				break;
 
@@ -227,6 +385,61 @@ class multilan_adminArea extends e_admin_dispatcher
 		}
 	}
 
+	public static function getTranslationFields($type)
+	{
+		switch($type)
+		{
+			case "news":
+				return array('news_title', 'news_body', 'news_extended', 'news_meta_description', 'news_summary');
+				break;
+
+			case "page":
+				return array('page_title', 'page_text', 'menu_title', 'menu_text');
+				break;
+
+			case "generic":
+				return array('gen_ip', 'gen_chardata');
+				break;
+
+			case "faqs":
+				return array('faq_question', 'faq_answer');
+			break;
+
+			default:
+				// code to be executed if n is different from all labels;
+		}
+
+
+	}
+
+
+	private function getVisibilityField($type)
+	{
+		switch($type)
+		{
+			case "news":
+				return 'news_class';
+				break;
+
+			case "page":
+				return 'page_class';
+				break;
+
+			case "generic":
+				return 'gen_intdata';
+				break;
+
+			case "faqs":
+				return 'faq_parent';
+				break;
+
+			default:
+				// code to be executed if n is different from all labels;
+		}
+
+	}
+
+
 	/**
 	 * @param $type
 	 * @param $lan
@@ -240,27 +453,41 @@ class multilan_adminArea extends e_admin_dispatcher
 		$table = '';
 		$fields = '';
 		$pid = '';
+		$update = array();
+		$insert = 'update';
 
 		switch($type)
 		{
 			case "news":
 				$table = 'news';
 				$pid = 'news_id';
-				$fields = array('news_title', 'news_body', 'news_extended', 'news_meta_description', 'news_summary'); // translatable fields.
+				$fields = $this->getTranslationFields('news'); // translatable fields.
 				$ucfield = 'news_class';
 				break;
 
 			case "page":
 				$table = 'page';
 				$pid = 'page_id';
-				$fields = array('page_title', 'page_text', 'menu_title', 'menu_text');
+				$fields = $this->getTranslationFields('page');
 				$ucfield = 'page_class';
+
+				break;
+
+			case "generic":
+				$table = 'generic';
+				$pid = 'gen_id';
+				$fields = $this->getTranslationFields('genetic');
+				$ucfield = 'gen_intdata';
+				$insert = 'replace';
+				$update['gen_id'] = $id;
+				$update['gen_type'] = 'wmessage';
+				$update['gen_datestamp'] = time();
 				break;
 
 			case "faqs":
 				$table = 'faqs';
 				$pid = 'faq_id';
-				$fields = array('faq_question', 'faq_answer');
+				$fields = $this->getTranslationFields('faqs');
 			//	$ucfield = 'page_class';
 
 				break;
@@ -268,6 +495,8 @@ class multilan_adminArea extends e_admin_dispatcher
 
 		if(empty($fields) || empty($pid))
 		{
+			e107::getLog()->addError("Fields is empty for type:".$type);
+			$this->logAjax();
 			return false; // "Invalid";
 		}
 
@@ -277,7 +506,7 @@ class multilan_adminArea extends e_admin_dispatcher
 		$tp = e107::getParser();
 		$row = $sql->retrieve($table, implode(",",$fields), $pid. ' = '.intval($id));
 
-		$update = array();
+
 
 		foreach($row as $field=>$value)
 		{
@@ -302,10 +531,15 @@ class multilan_adminArea extends e_admin_dispatcher
 					$update[$field] = $newValue;
 				}
 			}
+			elseif(E107_DBG_BASIC)
+			{
+				e107::getLog()->addError("Empty value for ".$field." using type:".$type);
+			}
 		}
 
 		if(empty($update))
 		{
+			$this->logAjax();
 			return false;
 		}
 
@@ -319,12 +553,29 @@ class multilan_adminArea extends e_admin_dispatcher
 
 		$lanTable = "lan_".strtolower($lan)."_".$table;
 
-		if($sql->update($lanTable, $update))
+		if($sql->$insert($lanTable, $update))
 		{
 			return true;
+
+		}
+		elseif(E107_DBG_BASIC)
+		{
+			e107::getLog()->addError("Couldn't update table: ".$lanTable." with ".print_r($update,true));
 		}
 
+		$this->logAjax();
 		return false;
+	}
+
+
+	private function logAjax()
+	{
+		if(E107_DBG_BASIC)
+		{
+			$log = e107::getLog();
+			$log->toFile('multilan',"Multi-Language Plugin Log", true);
+		}
+
 	}
 
 
@@ -368,6 +619,12 @@ class multilan_adminArea extends e_admin_dispatcher
 				$table = 'page';
 				$pid = 'page_id';
 				$method = 'syncPage';
+				break;
+
+			case "generic":
+				$table = 'generic';
+				$pid = 'gen_id';
+				$method = 'syncGeneric';
 				break;
 
 			case "faqs":
@@ -523,23 +780,24 @@ class status_admin_ui extends e_admin_ui
 		public $statusLink      = null;
 		public $statusTitle     = null; // fieldName
 
-		protected $preftabs        = array("Data Sync", "Offline", "Bing" );
+		protected $preftabs        = array("Data Sync", "Offline", "Bing", "Navigation" );
 
 		protected $prefs = array(
 			'syncLanguages'         => array('title'=> "Sync Table Content",  'tab'=>0, 'type'=>'method', 'data'=>'str'),
+			'syncPerPage'           => array('title'=> "Sync Items per page",  'tab'=>0, 'type'=>'number', 'data'=>'int'),
 			'untranslatedClass'	    => array('title'=> "Untranslated Class", 'tab'=>0, 'type'=>'userclass', 'writeParms'=>array('default'=>'TRANSLATE_ME')),
-			'autotranslatedClass'	    => array('title'=> "Auto-Translated Class", 'tab'=>0, 'type'=>'userclass', 'writeParms'=>array('default'=>'REVIEW_ME')),
+			'autotranslatedClass'	=> array('title'=> "Auto-Translated Class", 'tab'=>0, 'type'=>'userclass', 'writeParms'=>array('default'=>'REVIEW_ME')),
 
 
 			'offline_languages'     => array('title' => "Offline", 'tab'=>1, 'type'=>'method', 'data'=>'str'),
 			'offline_excludeadmins' => array('title'=>'Exclude Admins from redirect', 'tab'=>1, 'type'=>'boolean'),
-			'language_navigation'    => array('title'=>"Language Navigation", 'type'=>'method', 'tab'=>1),
+			'language_navigation'    => array('title'=>"Language Navigation", 'type'=>'method', 'tab'=>3),
 			'bing_translator'       => array('title' => 'Frontend Auto-Translator', 'type'=>'dropdown', 'tab'=>2,'writeParms'=>array(0=>'Off', 'auto'=>'Auto', 'notify'=>'Notify')),
 
 			'bing_exclude_installed'=>  array('title' => 'Exclude installed languages', 'type'=>'boolean', 'tab'=>2, 'help'=>"If enabled, will exclude languages currently installed in e107 from the available bing translations."),
 			'bing_client_id'    => array('title'=>"Client ID", 'type'=>'text', 'data'=>'str',  'tab'=>2,  'writeParms'=>array('tdClassRight'=>'form-inline','post'=>" <a class='btn btn-primary btn-mini btn-xs' target='_blank' href='https://msdn.microsoft.com/en-us/library/mt146806.aspx'>More Info.</a>")),
-			'bing_client_secret'    => array('title'=>"Client Secret", 'type'=>'text', 'data'=>'str', 'tab'=>2, 'writeParms'=>array('size'=>'xxlarge')),
-		//	'retain sefurls'	  => array('title'=> "Untranslated Class", 'tab'=>0, 'type'=>'userclass' ),
+			'bing_client_secret'    => array('title'=>"Client Secret", 'type'=>'text', 'data'=>'str', 'tab'=>2, 'writeParms'=>array('size'=>'xxlarge', 'post'=>"<br /><span class='alert alert-info'>Please note: The maximum throughput is 400,000 characters per hour or 2 million characters a day.</span>")),
+
 		);
 
 
@@ -549,16 +807,14 @@ class status_admin_ui extends e_admin_ui
 		function init()
 		{
 
-			$this->languageTables = e107::getDb()->db_IsLang(array('news','page','faqs'),true);
+			$this->languageTables = e107::getDb()->db_IsLang(array('news','page','faqs','generic'),true);
 
 			if(e107::isInstalled("faqs"))
 			{
 				$this->initFaqsPrefs();
 			}
 
-
-
-
+			$this->perPage = e107::pref('multilan','syncPerPage',10);
 
 			if(!empty($_POST['generate_lanlinks']))
 			{
@@ -753,6 +1009,9 @@ JS;
 
 			$this->langData = $this->getLangData($languages);
 
+			$this->fields['chars'] = array('title'=> "Chars",	'type' => 'method', 	'data' => 'str',  'method'=>'characterCount',	'width' => '100px',	'thclass' => 'right', 'class'=>'right', 'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
+
+
 			foreach($languages as $k=>$v)
 			{
 				if($v == $sitelanguage)
@@ -775,6 +1034,17 @@ JS;
 				}
 
 				$this->batchOptions['delete_'.$mode.'_'.$v] = "Delete from ".$v.' table';
+			}
+
+			foreach($languages as $v)
+			{
+				$lowerLang = strtolower($v);
+				if($v == $sitelanguage || !isset($this->languageTables[$lowerLang][MPREFIX.$mode ]))
+				{
+					continue;
+				}
+
+				$this->batchOptions['class_'.$mode.'_'.$v] = "Flag ".$v.' for translation ';
 			}
 
 
@@ -819,11 +1089,11 @@ JS;
 			$this->table                = 'news';
 			$this->listOrder            = 'news_id DESC';
 			$this->statusField          = 'news_class';
-			$this->statusLink           = "{e_BASE}news.php?item.{ID}"; // (no SEFs)
+			$this->statusLink           = "{e_ADMIN}newspost.php?mode=main&amp;action=edit&amp;iframe=1&amp;id={ID}"; // (no SEFs)
 			$this->statusTitle          = "news_title";
 
 			$this->fields['news_id']        = array('title'=> LAN_ID,			'type' => 'number',			'width' =>'5%', 'forced'=> TRUE, 'readonly'=>TRUE);
-			$this->fields['news_title']     = array('title'=> LAN_TITLE,		'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
+			$this->fields['news_title']     = array('title'=> LAN_TITLE,		'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE, 'readParms'=>'truncate=60');
 			$this->fields['news_datestamp'] = array('title'=> LAN_DATESTAMP,	'type' => 'datestamp', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 			$this->fields['news_class']     = array( 'nolist'=>true ); // to retrieve it for comparison.
 		}
@@ -835,16 +1105,32 @@ JS;
 			$this->table                = 'page';
 			$this->listOrder            = 'page_id DESC';
 			$this->statusField          = 'page_class';
-			$this->statusLink           = "{e_BASE}page.php?id={ID}"; // (no SEFs)
+			$this->statusLink           = "{e_ADMIN}cpage.php?action=edit&amp;iframe=1&amp;id={ID}"; // (no SEFs)
 			$this->statusTitle          = "page_title";
 
 			$this->fields['page_id']        = array('title'=> LAN_ID,			'type' => 'number',			'width' =>'5%', 'forced'=> TRUE, 'readonly'=>TRUE);
-			$this->fields['page_title']     = array('title'=> LAN_TITLE,		'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
+			$this->fields['page_title']     = array('title'=> LAN_TITLE,		'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE, 'readParms'=>'truncate=60');
 			$this->fields['page_datestamp'] = array('title'=> LAN_DATESTAMP,	'type' => 'datestamp', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 			$this->fields['page_class']     = array( 'nolist'=>true ); // to retrieve it for comparison.
-
 		}
 
+
+	public function initGeneric()
+	{
+		$this->pid                  = 'gen_id';
+		$this->table                = 'generic';
+		$this->listOrder            = 'gen_id DESC';
+		$this->statusField          = 'gen_intdata';
+		$this->statusLink           = "{e_ADMIN}wmessage.php?action=edit&amp;iframe=1&amp;id={ID}"; // (no SEFs)
+		$this->statusTitle          = "gen_ip";
+
+		$this->listQry      	    = "SELECT * FROM `#generic` WHERE gen_type='wmessage'  "; // Example Custom Query. LEFT JOINS allowed. Should be without any Order or Limit.
+
+		$this->fields['gen_id']         = array('title'=> LAN_ID,			'type' => 'number',			'width' =>'5%', 'forced'=> TRUE, 'readonly'=>TRUE);
+		$this->fields['gen_ip']         = array('title'=> LAN_TITLE,		'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
+		$this->fields['gen_datestamp']  = array('title'=> LAN_DATESTAMP,	'type' => 'datestamp', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
+		$this->fields['gen_intdata']    = array( 'nolist'=>true ); // to retrieve it for comparison.
+	}
 
 		public function initFaqs()
 		{
@@ -852,15 +1138,16 @@ JS;
 			$this->table                = 'faqs';
 			$this->listOrder            = 'faq_id DESC';
 			$this->statusField          = 'faq_parent';
-			$this->statusLink           = "{e_PLUGIN}faqs/faqs.php?id={ID}"; // (no SEFs)
+			$this->statusLink           = "{e_PLUGIN}faqs/admin_config.php?mode=main&amp;action=edit&amp;iframe=1&amp;id={ID}"; // (no SEFs)
 			$this->statusTitle          = "faq_question";
 
+			$this->listQry 	= "SELECT  f.*, u.* FROM #faqs AS f LEFT JOIN #user AS u ON f.faq_author = u.user_id WHERE f.faq_parent != 0"; // Should not be necessary.
+
+
 			$this->fields['faq_id']        = array('title'=> LAN_ID,			'type' => 'number',			'width' =>'5%', 'forced'=> TRUE, 'readonly'=>TRUE);
-			$this->fields['faq_question']     = array('title'=> LAN_TITLE,		'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
+			$this->fields['faq_question']     = array('title'=> LAN_TITLE,		'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE, 'readParms'=>'truncate=60');
 			$this->fields['faq_datestamp'] = array('title'=> LAN_DATESTAMP,	'type' => 'datestamp', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 			$this->fields['faq_parent']     = array( 'nolist'=>true ); // to retrieve it for comparison.
-
-
 		}
 
 
@@ -1251,6 +1538,8 @@ JS;
 		public function toolsPage()
 		{
 
+
+
 			$frm = e107::getForm();
 
 			$text2 = $frm->open('multilan-links');
@@ -1261,6 +1550,11 @@ JS;
 
 			".$frm->admin_button('generate_lanlinks', 'no-value', 'delete', "Generate LANs")."
 			</td></tr>
+
+
+
+
+
 			</table>";
 
 			$text2 .= $frm->close();
@@ -1378,6 +1672,24 @@ JS;
 		}
 
 
+		function characterCount($curval,$mode,$att)
+		{
+			$row            = $this->getController()->getListModel()->getData();
+			$id = $this->getController()->getMode();
+
+			$fields         = multilan_adminArea::getTranslationFields($id);
+
+			$sum = array();
+
+			foreach($fields as $k)
+			{
+				$sum[] = strlen($row[$k]);
+			}
+
+			return array_sum($sum);
+
+		}
+
 
 		function findTranslations($curval,$mode,$att)
 		{
@@ -1418,7 +1730,7 @@ JS;
 					$link = $tp->replaceConstants(str_replace('{ID}', $rw[$pid], $statusLink),'full');
 					$subUrl = $lng->subdomainUrl($langs, $link);
 
-					$text =  "<a class='e-modal' href='".$subUrl."' title=\"".$rw[$statusTitle]."\">".$icon."</a></span>";
+					$text =  "<a class='e-modal'  href='".$subUrl."' title=\"".$rw[$statusTitle]."\">".$icon."</a></span>";
 					break;
 				}
 			}
@@ -1428,22 +1740,58 @@ JS;
 
 		}
 
+
+		/**
+		 * @param $rw  Language Table
+		 * @param $row  English table
+		 * @return string
+		 */
 		function getStatusIcon($rw,$row)
 		{
 			$transField     = $this->getController()->statusField;
 			$reviewField    = e107::pref('multilan','autotranslatedClass');
+			$statusTitle    = $this->getController()->statusTitle;
+
+		//	print_a($transField);
+
+	//	print_a($rw);
+	//	print_a($row);
+
+		/*
+			$id = $this->getController()->getMode();
+			$translatedFields  = multilan_adminArea::getTranslationFields($id);
+
+			$translated = false;
+
+			foreach($translatedFields as $fld)
+			{
+				if($rw[$fld] != $row[$fld])
+				{
+					$translated = true;
+					break;
+				}
+			}
+*/
+
+		//	return $transField."(".$rw[$transField].")";
 
 			if($rw[$transField] == $reviewField)
 			{
 				return ADMIN_BING_ICON;
 			}
 
-			if($rw[$transField] == $row[$transField])
+			if($rw[$transField] == $row[$transField] && ($rw[$statusTitle] != $row[$statusTitle] ))
 			{
 				return ADMIN_TRUE_ICON;
 			}
 
+			if($rw[$transField] != $row[$transField])
+			{
+				return ADMIN_FLAG_ICON;
+			}
+
 			return ADMIN_FALSE_ICON;
+
 		}
 
 
