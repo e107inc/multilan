@@ -685,6 +685,9 @@ class multilan_adminArea extends e_admin_dispatcher
 		$srch = array('en', 'GB', 'US', 'gb');
 		$repl = array($languageCode, strtoupper($languageCode), strtoupper($languageCode), $languageCode);
 
+		$lc = strtolower($languageCode);
+		$lc2 = strtoupper($languageCode);
+
 
 		$toTranslate = $_SESSION['multilan_lanfiledata'][$id];
 
@@ -694,7 +697,18 @@ class multilan_adminArea extends e_admin_dispatcher
 			if($k == 'LC_ALL' || $k == 'CORE_LC' || $k == 'CORE_LC2')
 			{
 				$translation = str_replace($srch,$repl, $v);
-				$wmode = ($k == 'LC_ALL') ? 'setlocale' : '';
+
+				if($k == 'LC_ALL')
+				{
+					$wmode = 'setlocale';
+					$translation = "'".$lc."_".$lc2.".UTF-8', '".$lc.".utf8', '".$lc."_".$lc2.".utf8', '".$lc.".UTF-8'";
+				}
+				else
+				{
+					$wmode = '';
+				}
+
+			//	$wmode = ($k == 'LC_ALL') ? 'setlocale' : '';
 				$this->writeFile($newFile, $k, $translation, $wmode);
 				unset($toTranslate[$k]); // remove from the list.
 				//break;
