@@ -1107,9 +1107,14 @@ JS;
 			$this->statusTitle          = "news_title";
 
 			$this->fields['news_id']        = array('title'=> LAN_ID,			'type' => 'number',			'width' =>'5%', 'forced'=> TRUE, 'readonly'=>TRUE);
-			$this->fields['news_title']     = array('title'=> LAN_TITLE,		'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE, 'readParms'=>'truncate=60');
+			$this->fields['news_title']     = array('title'=> LAN_TITLE,	 '__tableField'=>'news_title', 'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>true, 'readParms'=>'truncate=60');
 			$this->fields['news_datestamp'] = array('title'=> LAN_DATESTAMP,	'type' => 'datestamp', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 			$this->fields['news_class']     = array( 'nolist'=>true ); // to retrieve it for comparison.
+
+
+
+
+			$this->fieldpref = array_keys($this->fields);
 		}
 
 
@@ -1123,7 +1128,7 @@ JS;
 			$this->statusTitle          = "page_title";
 
 			$this->fields['page_id']        = array('title'=> LAN_ID,			'type' => 'number',			'width' =>'5%', 'forced'=> TRUE, 'readonly'=>TRUE);
-			$this->fields['page_title']     = array('title'=> LAN_TITLE,		'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE, 'readParms'=>'truncate=60');
+			$this->fields['page_title']     = array('title'=> LAN_TITLE,		 '__tableField'=>'page_title', 'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE, 'readParms'=>'truncate=60');
 			$this->fields['page_datestamp'] = array('title'=> LAN_DATESTAMP,	'type' => 'datestamp', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 			$this->fields['page_class']     = array( 'nolist'=>true ); // to retrieve it for comparison.
 		}
@@ -1136,12 +1141,12 @@ JS;
 		$this->listOrder            = 'gen_id DESC';
 		$this->statusField          = 'gen_intdata';
 		$this->statusLink           = "{e_ADMIN}wmessage.php?action=edit&amp;iframe=1&amp;id={ID}"; // (no SEFs)
-		$this->statusTitle          = "gen_ip";
+		$this->statusTitle          = "gen_chardata";
 
 		$this->listQry      	    = "SELECT * FROM `#generic` WHERE gen_type='wmessage'  "; // Example Custom Query. LEFT JOINS allowed. Should be without any Order or Limit.
 
 		$this->fields['gen_id']         = array('title'=> LAN_ID,			'type' => 'number',			'width' =>'5%', 'forced'=> TRUE, 'readonly'=>TRUE);
-		$this->fields['gen_ip']         = array('title'=> LAN_TITLE,		'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
+		$this->fields['gen_ip']         = array('title'=> LAN_TITLE,	 '__tableField'=>'gen_ip',	'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 		$this->fields['gen_datestamp']  = array('title'=> LAN_DATESTAMP,	'type' => 'datestamp', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 		$this->fields['gen_intdata']    = array( 'nolist'=>true ); // to retrieve it for comparison.
 	}
@@ -1159,7 +1164,7 @@ JS;
 
 
 			$this->fields['faq_id']        = array('title'=> LAN_ID,			'type' => 'number',			'width' =>'5%', 'forced'=> TRUE, 'readonly'=>TRUE);
-			$this->fields['faq_question']     = array('title'=> LAN_TITLE,		'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE, 'readParms'=>'truncate=60');
+			$this->fields['faq_question']     = array('title'=> LAN_TITLE,	 '__tableField'=>'f.faq_question',	'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE, 'readParms'=>'truncate=60');
 			$this->fields['faq_datestamp'] = array('title'=> LAN_DATESTAMP,	'type' => 'datestamp', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 			$this->fields['faq_parent']     = array( 'nolist'=>true ); // to retrieve it for comparison.
 		}
