@@ -24,12 +24,17 @@ if(!empty($_GET['iframe']))
 	define('e_IFRAME', true);
 }
 
-define('ADMIN_BING_ICON', "<img src='".e_PLUGIN."multilan/images/bing_16.png' alt='auto-translated' />");
-define('ADMIN_FLAG_ICON', "<img src='".e_PLUGIN."multilan/images/flag_16.png' alt='un-translated' />");
+define('ADMIN_BING_ICON', "<img src='".e_PLUGIN."multilan/images/bing_16.png' class='auto-translated' alt='auto-translated' />");
+define('ADMIN_FLAG_ICON', "<img src='".e_PLUGIN."multilan/images/flag_16.png' class='un-translated' alt='un-translated' />");
 
-e107::css('inline', " .help-table td {
-        padding:7px 0;
- }
+e107::css('inline', "
+
+.help-table td {    padding:7px 0;   }
+ td.chars { padding-right:15px; border-right:1px solid black }
+.toggle-icon { cursor: pointer }
+td.lan-odd { background-color: rgba(255,255,255,0.05); }
+
+
  ");
 
 
@@ -821,6 +826,8 @@ class status_admin_ui extends e_admin_ui
 		function init()
 		{
 
+			// $this->addHeader("My Content");
+
 			$this->languageTables = e107::getDb()->db_IsLang(array('news','page','faqs','generic'),true);
 
 			if(e107::isInstalled("faqs"))
@@ -841,6 +848,13 @@ class status_admin_ui extends e_admin_ui
 			}
 
 			$js = <<<JS
+
+				$('.toggle-icon').on('click', function(){
+
+					var type = $(this).attr('data-type');
+					$("."+ type).fadeToggle();
+				});
+
 				$('#e--execute-batch').on('click', function(){
 
 					tmp = $('#etrigger-batch').val().split('_');
@@ -1023,9 +1037,9 @@ JS;
 
 			$this->langData = $this->getLangData($languages);
 
-			$this->fields['chars'] = array('title'=> "Chars",	'type' => 'method', 	'data' => 'str',  'method'=>'characterCount',	'width' => '100px',	'thclass' => 'right', 'class'=>'right', 'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
+			$this->fields['chars'] = array('title'=> "Chars",	'type' => 'method', 	'data' => 'str',  'method'=>'characterCount',	'width' => '100px',	'thclass' => 'right', 'class'=>'right chars', 'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 
-
+			$style = 'lan-odd';
 			foreach($languages as $k=>$v)
 			{
 				if($v == $sitelanguage)
@@ -1036,7 +1050,9 @@ JS;
 				$key = $lng->convert($v);
 
 
-				$this->fields[$key] = array('title'=> $key,	'type' => 'method', 	'data' => 'str',  'method'=>'findTranslations',	'width' => '100px',	'thclass' => 'center', 'class'=>'center', 'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
+				$this->fields[$key] = array('title'=> $key,	'type' => 'method', 	'data' => 'str',  'method'=>'findTranslations',	'width' => '60px',	'thclass' => 'center', 'class'=>'center '.$style, 'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
+
+				$style = ($style == 'lan-odd') ? 'lan-even' : 'lan-odd';
 			}
 
 			foreach($languages as $v)
@@ -1101,18 +1117,24 @@ JS;
 		{
 			$this->pid                  = 'news_id';
 			$this->table                = 'news';
-			$this->listOrder            = 'news_id DESC';
+			$this->listOrder            = 'news_datestamp DESC';
 			$this->statusField          = 'news_class';
 			$this->statusLink           = "{e_ADMIN}newspost.php?mode=main&amp;action=edit&amp;iframe=1&amp;id={ID}"; // (no SEFs)
 			$this->statusTitle          = "news_title";
 
-			$this->fields['news_id']        = array('title'=> LAN_ID,			'type' => 'number',			'width' =>'5%', 'forced'=> TRUE, 'readonly'=>TRUE);
-			$this->fields['news_title']     = array('title'=> LAN_TITLE,	 '__tableField'=>'news_title', 'type' => 'text', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>true, 'readParms'=>'truncate=60');
-			$this->fields['news_datestamp'] = array('title'=> LAN_DATESTAMP,	'type' => 'datestamp', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
+			$this->fields['news_id']        = array('title'=> LAN_ID,			'type' => 'number',			'width' =>'3%', 'forced'=> TRUE, 'readonly'=>TRUE);
+			$this->fields['news_title']     = array('title'=> LAN_TITLE,	 '__tableField'=>'news_title', 'method'=>'news_title', 'type' => 'method', 			'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>true, 'readParms'=>'truncate=60');
+			$this->fields['news_datestamp'] = array('title'=> LAN_DATESTAMP,	'type' => 'datestamp', 		'readParms'=>array('mask'=>'M.dd.yyyy'),	'data' => 'str',		'width' => 'auto',	'thclass' => 'left', 'class'=>'left',  'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 			$this->fields['news_class']     = array( 'nolist'=>true ); // to retrieve it for comparison.
+			$this->fields['news_category']     = array('title'=>LAN_CATEGORY, '__tableField'=>'news_category', 'type'=>'dropdown', 'data'=>'int', 'filter'=>true, 'nolist'=>true );
 
+			$data = e107::getDb()->retrieve('news_category','category_id,category_name', '', true);
 
-
+			foreach($data as $row)
+			{
+				$id = $row['category_id'];
+				$this->fields['news_category']['writeParms']['optArray'][$id] = $row['category_name'];
+			}
 
 			$this->fieldpref = array_keys($this->fields);
 		}
@@ -1586,6 +1608,29 @@ JS;
 
 	class status_form_ui extends e_admin_form_ui
 	{
+
+		function news_title($curval,$mode,$att)
+		{
+			$tp = e107::getParser();
+			if($mode == 'read')
+			{
+				$row            = $this->getController()->getListModel()->getData();
+
+				return $curval ."<div><small><small>".$tp->text_truncate($row['news_summary'],60)."</small></small></div>";
+			}
+		//	return print_a($att,true);
+
+		//	$id = $this->getController()->getMode();
+		//	$row    = $this->getController()->getListModel()->getData();
+
+		//	print_a($row);
+
+		//	return $curVal; // ."<small>".$row['news_summary']."</small>";
+
+
+
+		}
+
 
 
 		function language_navigation($curVal,$mode)
