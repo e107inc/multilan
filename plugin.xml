@@ -13,7 +13,7 @@
 		<link url="admin_config.php" description="" icon="" iconSmall="" primary="true" >LAN_CONFIGURE</link>
 	</adminLinks>
     <siteLinks>
-        <link url="#" function='language' icon="globe.glyph" description="Choose Language" perm="admin" ></link>
+        <link url="#" function='language' icon="" description="Choose Language" perm="admin" >LAN_MULTILAN_NAVICON</link>
     </siteLinks>
     <userClasses>
         <class name="TRANSLATE_ME" description="Items requiring translation and the team members who do it." />

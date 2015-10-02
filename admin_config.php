@@ -810,7 +810,9 @@ class status_admin_ui extends e_admin_ui
 
 			'offline_languages'     => array('title' => "Offline", 'tab'=>1, 'type'=>'method', 'data'=>'str'),
 			'offline_excludeadmins' => array('title'=>'Exclude Admins from redirect', 'tab'=>1, 'type'=>'boolean'),
-			'language_navigation'    => array('title'=>"Language Navigation", 'type'=>'method', 'tab'=>3),
+			'language_nav_icon'       => array('title' => 'Main Navigation Icon', 'type'=>'dropdown', 'tab'=>3, 'help'=>'Use: LAN_MULTILAN_NAVICON', 'writeParms'=>array( 'globe'=>'Globe', 'flag'=>'Flags')),
+
+			'language_navigation'    => array('title'=>"Dropdown Navigation Options", 'type'=>'method', 'tab'=>3),
 			'bing_translator'       => array('title' => 'Frontend Auto-Translator', 'type'=>'dropdown', 'tab'=>2,'writeParms'=>array(0=>'Off', 'auto'=>'Auto', 'notify'=>'Notify')),
 
 			'bing_exclude_installed'=>  array('title' => 'Exclude installed languages', 'type'=>'boolean', 'tab'=>2, 'help'=>"If enabled, will exclude languages currently installed in e107 from the available bing translations."),
@@ -1040,6 +1042,9 @@ JS;
 			$this->fields['chars'] = array('title'=> "Chars",	'type' => 'method', 	'data' => 'str',  'method'=>'characterCount',	'width' => '100px',	'thclass' => 'right', 'class'=>'right chars', 'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
 
 			$style = 'lan-odd';
+
+
+
 			foreach($languages as $k=>$v)
 			{
 				if($v == $sitelanguage)
