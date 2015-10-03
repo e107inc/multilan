@@ -41,6 +41,8 @@ class multilan_sitelink // include plugin-folder in the name.
 		$data = $lng->installed();
 
 		$activeLangs = e107::pref('multilan','language_navigation');
+		$flags = e107::pref('multilan','language_nav_dropflag', false);
+
 
 		sort($data);
 
@@ -48,13 +50,12 @@ class multilan_sitelink // include plugin-folder in the name.
 		{
 
 
-
-
 			if($lng->isValid($ln))
 			{
 				$redirect = deftrue("MULTILANG_SUBDOMAIN") ? $lng->subdomainUrl($ln) : e_SELF."?elan=".$ln;
 
 				$name = $lng->toNative($ln);
+				$iso = $lng->convert($ln);
 
 				if(!isset($activeLangs[$ln]) || empty($activeLangs[$ln]))
 				{
@@ -73,7 +74,7 @@ class multilan_sitelink // include plugin-folder in the name.
 					'link_name'			=> $tp->toHtml($name,'','TITLE'),
 					'link_url'			=> $redirect,
 					'link_description'	=> $ln,
-					'link_button'		=> '',
+					'link_button'		=> ($flags) ? $this->getFlag($iso, $ln) : '',
 					'link_category'		=> '',
 					'link_order'		=> '',
 					'link_parent'		=> '',
@@ -93,6 +94,20 @@ class multilan_sitelink // include plugin-folder in the name.
 		
 		return $sublinks;
 	    
+	}
+
+
+	private function getFlag($lan, $language)
+	{
+
+		if(file_exists(e_PLUGIN."multilan/images/flags/16/".$lan.".png"))
+		{
+			return "{e_PLUGIN}multilan/images/flags/16/".$lan.".png";
+		}
+
+		e107::getMessage()->addDebug("Couldn't find:  {e_PLUGIN}multilan/images/flags/16/".$lan.".png (".$language.")");
+
+		return false;
 	}
 	
 }

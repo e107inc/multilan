@@ -10,8 +10,9 @@ class multilan_nav
 
 		function __construct()
 		{
+			$this->type = e107::pref('multilan','language_nav_icon');
+
 			define('LAN_MULTILAN_NAVICON', $this->icon());
-			$this->type = e107::pref('multilan','language_nav_icon', 'globe');
 		}
 
 
@@ -29,10 +30,15 @@ class multilan_nav
 
 		function getFlag()
 		{
-			if(is_readable(e_PLUGIN."multilan/images/flags/16/".e_LAN.".png"))
+
+			if(file_exists(e_PLUGIN."multilan/images/flags/16/".e_LAN.".png"))
 			{
 				return "<img src='".e_PLUGIN_ABS."multilan/images/flags/16/".e_LAN.".png' alt='".e_LANGUAGE."' />";
 			}
+
+			e107::getMessage()->addDebug("Couldn't find:  ".e_PLUGIN_ABS."multilan/images/flags/16/".e_LAN.".png");
+
+			return false;
 		}
 
 }

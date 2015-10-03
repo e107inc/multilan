@@ -810,8 +810,8 @@ class status_admin_ui extends e_admin_ui
 
 			'offline_languages'     => array('title' => "Offline", 'tab'=>1, 'type'=>'method', 'data'=>'str'),
 			'offline_excludeadmins' => array('title'=>'Exclude Admins from redirect', 'tab'=>1, 'type'=>'boolean'),
-			'language_nav_icon'       => array('title' => 'Main Navigation Icon', 'type'=>'dropdown', 'tab'=>3, 'help'=>'Use: LAN_MULTILAN_NAVICON', 'writeParms'=>array( 'globe'=>'Globe', 'flag'=>'Flags')),
-
+			'language_nav_icon'       => array('title' => 'Main Navigation Icon', 'type'=>'dropdown', 'data'=>'str', 'tab'=>3, 'help'=>'Use: LAN_MULTILAN_NAVICON', 'writeParms'=>array( 'globe'=>'Globe', 'flag'=>'Flags')),
+			'language_nav_dropflag' => array('title'=>'Display flags in dropdown menu', 'tab'=>3, 'type'=>'boolean'),
 			'language_navigation'    => array('title'=>"Dropdown Navigation Options", 'type'=>'method', 'tab'=>3),
 			'bing_translator'       => array('title' => 'Frontend Auto-Translator', 'type'=>'dropdown', 'tab'=>2,'writeParms'=>array(0=>'Off', 'auto'=>'Auto', 'notify'=>'Notify')),
 
