@@ -38,23 +38,21 @@ class multilan_sitelink // include plugin-folder in the name.
 		$tp = e107::getParser();
 		$sublinks = array();
 		$lng = e107::getLanguage();
-		$data = $lng->installed();
+
+		$data = $lng->installed('native');
 
 		$activeLangs = e107::pref('multilan','language_navigation');
 		$flags = e107::pref('multilan','language_nav_dropflag', false);
 
 
-		sort($data);
-
-		foreach($data as $k=>$ln)
+		foreach($data as $ln=>$name)
 		{
-
 
 			if($lng->isValid($ln))
 			{
 				$redirect = deftrue("MULTILANG_SUBDOMAIN") ? $lng->subdomainUrl($ln) : e_SELF."?elan=".$ln;
 
-				$name = $lng->toNative($ln);
+			//	$name = $lng->toNative($ln);
 				$iso = $lng->convert($ln);
 
 				if(!isset($activeLangs[$ln]) || empty($activeLangs[$ln]))
