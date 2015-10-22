@@ -34,6 +34,7 @@ class multilan_copymodule
 		$this->untranslatedFAQCat   = e107::pref('multilan','untranslatedFAQCat');
 		$this->languages            = e107::pref('multilan','syncLanguages');
 		$this->sitelanguage         = e107::getPref('sitelanguage');
+		$this->publicOnly            = e107::pref('multilan','syncPublicOnly');
 	}
 
 	/**
@@ -51,6 +52,20 @@ class multilan_copymodule
 	}
 
 
+	private function isPublic($classData)
+	{
+		if(empty($this->publicOnly))
+		{
+			return true;
+		}
+
+		if(intval($classData) === e_UC_PUBLIC)
+		{
+			return true;
+		}
+
+		return false;
+	}
 
 
 	function syncNews($data, $event='', $languages=array())
@@ -61,7 +76,14 @@ class multilan_copymodule
 			return false;
 		}
 
+
+
 		$data = $data['newData'];
+
+		if($this->isPublic($data['news_class']) === false)
+		{
+			return false;
+		}
 
 		$langs = (empty($languages)) ? $this->languages['news'] : $languages;
 
@@ -81,6 +103,11 @@ class multilan_copymodule
 		}
 
 		$data = $data['newData'];
+
+		if($this->isPublic($data['page_class']) === false)
+		{
+			return false;
+		}
 
 		$langs = (empty($languages)) ? $this->languages['page'] : $languages;
 
