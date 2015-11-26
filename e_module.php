@@ -27,6 +27,8 @@ class multilan_copymodule
 	private $untranslatedFAQCat;
 	private $languages;
 	private $sitelanguage;
+	private $deleteSEF;
+	private $nonLatinLanguages = array("Japanese", "Russian", "Korean", "Hebrew", "Arabic");
 
 	function __construct()
 	{
@@ -35,6 +37,8 @@ class multilan_copymodule
 		$this->languages            = e107::pref('multilan','syncLanguages');
 		$this->sitelanguage         = e107::getPref('sitelanguage');
 		$this->publicOnly            = e107::pref('multilan','syncPublicOnly');
+		$this->deleteSEF            = e107::pref('multilan', 'syncRemoveSef');
+
 	}
 
 	/**
@@ -86,10 +90,11 @@ class multilan_copymodule
 		}
 
 		$langs = (empty($languages)) ? $this->languages['news'] : $languages;
+		$deleteSEF = (empty($this->deleteSEF)) ? null : 'news_sef';
 
 		foreach($langs as $k=>$lng)
 		{
-			$this->insert('news', $lng, array('news_id', $data['news_id']), 'news_class');
+			$this->insert('news', $lng, array('news_id', $data['news_id']), 'news_class','', $deleteSEF);
 		}
 	}
 
@@ -110,10 +115,11 @@ class multilan_copymodule
 		}
 
 		$langs = (empty($languages)) ? $this->languages['page'] : $languages;
+		$deleteSEF = (empty($this->deleteSEF)) ? null : 'page_sef';
 
 		foreach($langs as $k=>$lng)
 		{
-			$this->insert('page', $lng, array('page_id', $data['page_id']), 'page_class');
+			$this->insert('page', $lng, array('page_id', $data['page_id']), 'page_class','', $deleteSEF);
 		}
 	}
 
@@ -170,8 +176,9 @@ class multilan_copymodule
 	 * @param string $lng eg. English
 	 * @param array $pid Primary ID eg. array('news_id', $val)
 	 * @param string $classReset eg. news_class
+	 * @oaram string $emptySEF eg. news_sef
 	 */
-	function insert($table, $lng, $pid=array(), $classReset='', $filter='')
+	function insert($table, $lng, $pid=array(), $classReset='', $filter='', $sefField='')
 	{
 		$sql        = e107::getDb();
 		$tp         = e107::getParser();
@@ -205,6 +212,17 @@ class multilan_copymodule
 			{
 				e107::getMessage()->addError("Couldn't reset translator class for ".$table." :: ".$lng);
 			}
+
+			if($this->deletableSEF($sefField, $lng))
+			{
+				if($sql->gen("UPDATE `".$lanTable."` SET ".$sefField ." = '' WHERE ".$pid[0]." = ".intval($pid[1])." LIMIT 1")===false)
+				{
+					e107::getMessage()->addError("Couldn't empty copied field <b>".$sefField."</b> for ".$table." :: ".$lng);
+				}
+
+			}
+
+
 			e107::getMessage()->addSuccess("Copied # ".intval($pid[1])." into  ".$lng." ".$table." table.", 'default', true);
 		}
 
@@ -212,6 +230,22 @@ class multilan_copymodule
 	}
 
 
+	private function deletableSEF($sefField,$lang)
+	{
+
+		if(empty($sefField))
+		{
+			return false;
+		}
+
+		if(empty($this->deleteSEF))
+		{
+			return false;
+		}
+
+		return (in_array($lang, $this->nonLatinLanguages)) ? false : true;
+
+	}
 
 
 }

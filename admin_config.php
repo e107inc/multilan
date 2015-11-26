@@ -805,6 +805,7 @@ class status_admin_ui extends e_admin_ui
 			'syncLanguages'         => array('title'=> "Sync Table Content",  'tab'=>0, 'type'=>'method', 'data'=>'str'),
 			'syncPerPage'           => array('title'=> "Sync Items per page",  'tab'=>0, 'type'=>'number', 'data'=>'int'),
 			'syncPublicOnly'        => array('title'=> "Sync Public Only ",  'tab'=>0, 'type'=>'boolean', 'data'=>'int', 'help'=>'Sync only when Visibility is set to Everyone/Public'),
+			'syncRemoveSef'        => array('title'=> "Remove SEF URLs during Sync ",  'tab'=>0, 'type'=>'boolean', 'data'=>'int', 'help'=>'Delete the English SEF Url during copying/syncing'),
 			'untranslatedClass'	    => array('title'=> "Untranslated Class", 'tab'=>0, 'type'=>'userclass', 'writeParms'=>array('default'=>'TRANSLATE_ME')),
 			'autotranslatedClass'	=> array('title'=> "Auto-Translated Class", 'tab'=>0, 'type'=>'userclass', 'writeParms'=>array('default'=>'REVIEW_ME')),
 
