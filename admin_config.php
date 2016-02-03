@@ -1801,7 +1801,7 @@ JS;
 					$link = $tp->replaceConstants(str_replace('{ID}', $rw[$pid], $statusLink),'full');
 					$subUrl = $lng->subdomainUrl($langs, $link);
 
-					$text =  "<a class='e-modal'  href='".$subUrl."' title=\"".$rw[$statusTitle]."\">".$icon."</a></span>";
+					$text =  "<a class='e-modal'  href='".$subUrl."' data-modal-caption=\"".$language.": #".$itemid." ".$tp->toAttribute($row[$statusTitle])."\" title=\"".$tp->toAttribute($rw[$statusTitle])."\">".$icon."</a></span>";
 					break;
 				}
 			}

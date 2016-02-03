@@ -27,7 +27,9 @@ class multilan_sitelink // include plugin-folder in the name.
 			'function'		=> "language"
 		);	
 		
-		
+
+
+
 		return $links;
 	}
 	
@@ -78,7 +80,7 @@ class multilan_sitelink // include plugin-folder in the name.
 					'link_parent'		=> '',
 					'link_open'			=> '',
 					'link_class'		=> e_UC_PUBLIC,
-					'link_active'       => (e_LANGUAGE == $ln) ? 1 : 0
+					'link_active'       => (e_LANGUAGE == $ln) ? 1 : 0,
 				);
 				//	break;
 			}
@@ -97,15 +99,7 @@ class multilan_sitelink // include plugin-folder in the name.
 
 	private function getFlag($lan, $language)
 	{
-
-		if(file_exists(e_PLUGIN."multilan/images/flags/16/".$lan.".png"))
-		{
-			return "{e_PLUGIN}multilan/images/flags/16/".$lan.".png";
-		}
-
-		e107::getMessage()->addDebug("Couldn't find:  {e_PLUGIN}multilan/images/flags/16/".$lan.".png (".$language.")");
-
-		return false;
+		return "<i class='multilan flag-".$lan."'></i>";
 	}
 	
 }
