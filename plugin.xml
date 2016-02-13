@@ -10,7 +10,7 @@
 	<category>manage</category>
 	<copyright></copyright>
 	<adminLinks>
-		<link url="admin_config.php" description="" icon="" iconSmall="" primary="true" >LAN_CONFIGURE</link>
+		<link url="admin_config.php" description="" icon="images/multilan_32.png" iconSmall="images/multilan_16.png" icon128="images/multilan_128.png" primary="true" >LAN_CONFIGURE</link>
 	</adminLinks>
     <siteLinks>
         <link url="#" function='language' icon="" description="Choose Language" perm="admin" >LAN_MULTILAN_NAVICON</link>
