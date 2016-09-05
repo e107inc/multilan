@@ -270,7 +270,7 @@ class multilan_offline
 		$tp                 = e107::getParser();
 
 
-		if(!isset($_SERVER["HTTP_USER_AGENT"]) || (e_ADMIN_AREA == true) || (e_PAGE == 'get.php') || deftrue('MULTILAN_NO_OFFLINE'))
+		if(!isset($_SERVER["HTTP_USER_AGENT"]) || (e_ADMIN_AREA == true) || (deftrue('e_PAGE') == 'get.php') || deftrue('MULTILAN_NO_OFFLINE'))
 		{
 			$this->active = false;
 			return false;
@@ -307,7 +307,7 @@ class multilan_offline
 		}
 
 
-		if($loc !='' && (e_PAGE != 'sitedown.php') && (e_SELF != $loc) && ($disabled !== true) )
+		if($loc !='' && (deftrue('e_PAGE') != 'sitedown.php') && (e_SELF != $loc) && ($disabled !== true) )
 		{
 			if(!defined('THEME'))
 			{

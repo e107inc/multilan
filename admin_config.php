@@ -649,7 +649,7 @@ class multilan_adminArea extends e_admin_dispatcher
 		if(e107::getDb()->select($lanTable,'*', $pid. ' = '.intval($id))) // already exists.
 		{
 			// echo "Already exists";
-			return false;
+			//return false;
 		}
 
 
@@ -677,10 +677,31 @@ class multilan_adminArea extends e_admin_dispatcher
 		$lng = e107::getLanguage();
 
 		$id             = $_GET['lanid'];
-		$languageCode   = e107::getParser()->filter($_GET['language'], 'w');
+	//	$languageCode   = e107::getParser()->filter($_GET['language'], 'w');
+		$languageCode   = $_GET['language'];
+
 		$language       = $lng->convert($languageCode);
+
+		if($languageCode == 'zh-CHS')
+		{
+			$language = 'ChineseSimp';
+		}
+
+		if($languageCode == 'zh-CHT')
+		{
+			$language = 'ChineseTrad';
+		}
+
+
 		$newFile        = str_replace(array('-core-','-plugin-','English'), array(e_LANGUAGEDIR.'English/', e_PLUGIN, $language), $_SESSION['multilan_lanfilelist'][$id]);
 
+
+
+	//	$log = "Bing: ".$languageCode."\ne107Language: ".$language."\n";
+
+		//file_put_contents(e_LOG."multilanBing.log", date('r').$log, FILE_APPEND);
+
+		//return true;
 
 		if(file_exists($newFile))
 		{
@@ -720,6 +741,10 @@ class multilan_adminArea extends e_admin_dispatcher
 			}
 		}
 
+
+
+
+
 		$transArray = $bng->getTranslation('en', $languageCode, $toTranslate, true);
 		$this->writeFile($newFile, $transArray);
 
@@ -736,6 +761,10 @@ class multilan_adminArea extends e_admin_dispatcher
 		$output = '';
 
 		$dir =  dirname($file);
+
+		file_put_contents(e_LOG."multilanBing.log", date('r')."\t\tDirectory ".$dir."\n", FILE_APPEND);
+
+
 
 		if(!is_dir($dir))
 		{
@@ -771,8 +800,14 @@ class multilan_adminArea extends e_admin_dispatcher
 			$output .= "\n";
 		}
 
-		file_put_contents($file, $output, FILE_APPEND);
+		if(!file_put_contents($file, $output, FILE_APPEND))
+		{
+			file_put_contents(e_LOG."multilanBing.log", date('r')."\t\tCouldn't save to ".$file."\n", FILE_APPEND);
 
+		}
+
+
+		e107::debug('multilanFile',$file);
 	}
 
 
