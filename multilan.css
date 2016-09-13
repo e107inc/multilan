@@ -45,3 +45,5 @@ display: inline-block; margin-right:5px; vertical-align:middle  }
 .multilan.flag-ur { background-position: 0 -1092px; }
 .multilan.flag-us { background-position: 0 -1118px; }
 .multilan.flag-vi { background-position: 0 -1144px; }
+
+.multilan-hidden a:after { content:' (hidden)' }

@@ -12,8 +12,13 @@ class multilan_shortcodes extends e_shortcode // must match the folder name of t
 
 
 
-	function sc_multilan_nav($parm='')
+	function sc_multilan_nav($parm=null)
 	{
+
+		if(empty($parm))
+		{
+			$parm = 'main';
+		}
 
 		$lng = e107::getLanguage();
 
@@ -32,7 +37,8 @@ class multilan_shortcodes extends e_shortcode // must match the folder name of t
 		{
 
 			$name = $natName;
-			$hidden = false;
+
+			$class = ($languageFolder == e_LANGUAGE) ? ' class="disabled"' : '';
 
 			if(!isset($activeLangs[$languageFolder]) || empty($activeLangs[$languageFolder]))
 			{
@@ -42,8 +48,7 @@ class multilan_shortcodes extends e_shortcode // must match the folder name of t
 				}
 				else
 				{
-					 $name .= " (hidden)";
-					$hidden = true;
+					$class = ' class="multilan-hidden"';
 				}
 
 			}
@@ -52,14 +57,14 @@ class multilan_shortcodes extends e_shortcode // must match the folder name of t
 
 			$link = deftrue("MULTILANG_SUBDOMAIN") ? $lng->subdomainUrl($languageFolder) : e_SELF."?elan=".$code;
 
-			$class = ($languageFolder == e_LANGUAGE) ? ' class="disabled"' : '';
-
 			$ret[] =  "<li role='presentation' {$class}><a  href='{$link}'>{$name}</a></li>";
 		}
 
 		if(!empty($ret))
 		{
-			return '<ul class="multilan-nav nav nav-pills nav-justified" >'.implode("\n", $ret).'</ul>';
+			$class = "multilan-nav-".$parm;
+
+			return '<ul class="multilan-nav '.$class.' nav  nav-justified" >'.implode("\n", $ret).'</ul>';
 		}
 
 		return '';
