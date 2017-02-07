@@ -338,7 +338,7 @@ class multilan_offline
 
 
 			header('Content-type: text/html; charset='.CHARSET);
-			include_lan(e_LANGUAGEDIR.e_LANGUAGE.'/lan_sitedown.php');
+			e107::includeLan(e_LANGUAGEDIR.e_LANGUAGE.'/lan_sitedown.php');
 
 			global $SITEDOWN_TABLE;
 

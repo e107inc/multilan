@@ -1697,7 +1697,8 @@ JS;
 
 			foreach($languages as $v)
 			{
-				$text .= "<tr><td>".$v."</td><td>".$frm->radio_switch('language_navigation['.$v.']', varset($curVal[$v],1))."</td></tr>";
+				$value = isset($curVal[$v]) ? $curVal[$v] : 1;
+				$text .= "<tr><td>".$v."</td><td>".$frm->radio_switch('language_navigation['.$v.']', $value)."</td></tr>";
 			}
 
 			$text .= "</table>";
@@ -1761,7 +1762,9 @@ JS;
 					}
 				}
 
-				$text2 .= "<tr><td>".$v['caption']."</td><td>".$frm->checkboxes('syncLanguages['.$mode.'][]', $lanOpts, varset($curVal[$mode]), array('useKeyValues'=>1));
+				$curValMode= isset($curVal[$mode]) ? $curVal[$mode] : '';
+
+				$text2 .= "<tr><td>".$v['caption']."</td><td>".$frm->checkboxes('syncLanguages['.$mode.'][]', $lanOpts, $curValMode, array('useKeyValues'=>1));
 
 				$text2 .= "</td></tr>";
 			}
@@ -1955,6 +1958,9 @@ JS;
 				$fieldName = "offline_languages[".$lang."]";
 				$fieldNameUrl = "offline_languages[".$lang."-url]";
 
+
+				$curValURL = isset($curval[$lang."-url"]) ? $curval[$lang."-url"] : '';
+
 				$text .="
 		        <tr>
 			        <td>{$lang} (".$lng->convert($lang).")</td>
@@ -1966,7 +1972,7 @@ JS;
 			        </td>
 			        <td class='form-inline'>
 			            ".$this->radio($fieldName, 2, $checked_2)." ".
-			            $this->text($fieldNameUrl, varset($curval[$lang."-url"],''), 255, array('size'=>'xxlarge'))."
+			            $this->text($fieldNameUrl, $curValURL, 255, array('size'=>'xxlarge'))."
 			            <div class='field-help' data-placement='top'>eg. http://wherever.com or {e_PLUGIN}myplugin/myplugin.php</div>
 			        </td>
 
