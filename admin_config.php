@@ -861,6 +861,7 @@ class status_admin_ui extends e_admin_ui
 
 		protected $languageTables = array();
 		protected $totalCharCount  = 0;
+		protected $localPacks = array();
 
 		function init()
 		{
@@ -1612,9 +1613,106 @@ JS;
 
 			// show_packs();
 
-			return $lck->showLanguagePacks();
+			$this->localPacks = $lck->getLocalLanguagePacks();
+
+			return $this->renderLanguagePacks();
 
 		}
+
+			/**
+		 * List the installed language packs.
+		 * @return string
+		 */
+		private function renderLanguagePacks()
+		{
+			$frm = e107::getForm();
+			$ns = e107::getRender();
+			$tp = e107::getParser();
+
+		//	if(is_readable(e_ADMIN."ver.php"))
+			{
+			//	include(e_ADMIN."ver.php");
+				list($ver, $tmp) = explode(" ", e_VERSION);
+			}
+
+			$lck = e107::getSingleton('lancheck', e_ADMIN."lancheck.php");
+
+			$release_diz = defset("LANG_LAN_30","Release Date");
+			$compat_diz = defset("LANG_LAN_31", "Compatibility");
+		//	$lan_pleasewait = (deftrue('LAN_PLEASEWAIT')) ?  $tp->toJS(LAN_PLEASEWAIT) : "Please Wait";
+
+			$buttonLink = e_ADMIN."language.php?mode=main&amp;action=tools";
+
+
+			$text = "<form id='lancheck' method='post' action='".e_REQUEST_URI."'>
+				<table class='table adminlist table-striped'>
+				<colgroup>
+					<col style='width:20%' />
+					<col style='width:20%' />
+					<col style='width:20%' />
+					<col style='width:15%' />
+					<col style='width:25%' />
+				</colgroup>";
+			$text .= "<thead>
+			<tr>
+			<th>".ADLAN_132."</th>
+			<th class='text-center'>".$release_diz."</th>
+			<th class='text-center'>".$compat_diz."</th>
+			<th class='text-center'>".LAN_STATUS."</td>
+			<th class='text-right' style='white-space:nowrap'>".LAN_OPTIONS."</td>
+			</tr>
+			</thead>
+			";
+
+	//		$text .= "<tr><th colspan='5'>".LAN_INSTALLED."</th></tr>";
+
+		//	$onlinePacks = $lck->getOnlineLanguagePacks();
+		//	$localPacks = $lck->getLocalLanguagePacks();
+
+			foreach($this->localPacks as $language=>$value)
+			{
+
+				$errFound = (isset($_SESSION['lancheck'][$language]['total']) && $_SESSION['lancheck'][$language]['total'] > 0) ?  TRUE : FALSE;
+
+
+				$text .= "<tr>
+				<td><span class='language-name'>".$language."</a></td>
+				<td class='text-center'>".$value['date']."</td>
+				<td class='text-center'>".$value['compatibility']."</td>
+				<td class='text-center'>".( $errFound ? ADMIN_FALSE_ICON : ADMIN_TRUE_ICON )."</td>
+				<td class='text-right'>";
+
+			//	$text .= "<input type='submit' name='language_sel[{$language}]' value=\"".LAN_CHECK_2."\" class='btn btn-primary' />";
+				$text .= "<a href='".$buttonLink."&amp;sub=verify&amp;lan=".$language."' class='btn btn-default' >".$tp->toGlyph('fa-search').LAN_CHECK_2."</a>";
+
+			/*	$text .= "
+				<input type='submit' name='ziplang[{$language}]' value=\"".LANG_LAN_23."\" class='btn btn-default' onclick=\"this.value = '".$lan_pleasewait."'\" />";
+			*/
+				$text .= "</td>
+				</tr>";
+			}
+
+		//	$text .= "<tr><th colspan='5'>".defset('LANG_LAN_151','Available')."</th></tr>"; // don't translate this.
+
+		//	$text .= $this->renderOnlineLanguagePacks();
+
+			$text .= "
+			</tr></table>";
+
+
+			$text .= "<div class='nav navbar'><small class='navbar-text'>&nbsp;</small></div>";
+
+
+
+			$text .= "</form>";
+
+
+			return $text;
+
+
+
+		}
+
 
 
 
