@@ -108,7 +108,7 @@ class multilan_adminArea extends e_admin_dispatcher
 
 	function init()
 	{
-		$this->adminMenu['main/tables'] = array('caption'=>'Tables', 'modal-caption'=>'Database Tables', 'perm'=>0, 'modal'=>true, 'uri'=>e_ADMIN.'language.php?mode=main&action=db&iframe=1');
+		$this->adminMenu['main/tables'] = array('caption'=>'Tables', 'modal-caption'=>'Database Tables', 'perm'=>0, 'modal'=>true, 'uri'=>e_ADMIN.'language.php?mode=main&iframe=1&action=db');
 
 		e107::css('inline', " #etrigger-batch { width: 300px } ");
 
@@ -125,6 +125,13 @@ class multilan_adminArea extends e_admin_dispatcher
 		if(e_AJAX_REQUEST)
 		{
 			$this->handleAjax();
+		}
+
+
+		if(!$multi = e107::getPref('multilanguage'))
+		{
+			e107::getMessage()->addWarning("Multilanguage tables are disabled. Enabling now.");
+			e107::getConfig()->set('multilanguage',1)->save(false,false,false);
 		}
 
 	}
@@ -834,7 +841,7 @@ class status_admin_ui extends e_admin_ui
 		public $statusLink      = null;
 		public $statusTitle     = null; // fieldName
 
-		protected $preftabs        = array("Data Sync", "Offline", "Bing", "Navigation" );
+		protected $preftabs        = array("Data Sync", "Offline", "Bing", "Navigation", LAN_ADMIN );
 
 		protected $prefs = array(
 			'syncLanguages'         => array('title'=> "Sync Table Content",  'tab'=>0, 'type'=>'method', 'data'=>'str'),
@@ -855,6 +862,9 @@ class status_admin_ui extends e_admin_ui
 			'bing_exclude_installed'=>  array('title' => 'Exclude installed languages', 'type'=>'boolean', 'tab'=>2, 'help'=>"If enabled, will exclude languages currently installed in e107 from the available bing translations."),
 			'bing_client_id'    => array('title'=>"Client ID", 'type'=>'text', 'data'=>'str',  'tab'=>2,  'writeParms'=>array('tdClassRight'=>'form-inline','post'=>" <a class='btn btn-primary btn-mini btn-xs' target='_blank' href='https://msdn.microsoft.com/en-us/library/mt146806.aspx'>More Info.</a>")),
 			'bing_client_secret'    => array('title'=>"Client Secret", 'type'=>'text', 'data'=>'str', 'tab'=>2, 'writeParms'=>array('size'=>'xxlarge', 'post'=>"<br /><span class='alert alert-info'>Please note: The maximum throughput is 400,000 characters per hour or 2 million characters a day.</span>")),
+
+			'admin_translations_tab'  => array('title'=> "Translations Tab Class", 'tab'=>4, 'type'=>'userclass', 'help'=>'Class who can view the status of translations when editing news items'),
+
 
 		);
 
@@ -1958,6 +1968,9 @@ JS;
 			$transField     = $this->getController()->statusField;
 			$reviewField    = e107::pref('multilan','autotranslatedClass');
 			$statusTitle    = $this->getController()->statusTitle;
+
+
+	e107::getDebug()->log('transField: '.$transField.'    statusField: '.$statusTitle);
 
 		//	print_a($transField);
 
