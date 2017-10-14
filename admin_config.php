@@ -1721,6 +1721,11 @@ JS;
 
 			$val = round(($lanCount / $origCount) * 100);
 
+			if($val> 100)
+			{
+				return "<span class='text-danger'>".$val."%</span>";
+			}
+
 			$text = ($val != 100) ? "<span class='text-warning'>".$val."%</span>" : $val . '%';
 
 			return $text;
