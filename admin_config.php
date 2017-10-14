@@ -1432,7 +1432,7 @@ JS;
 
 			$this->languageList = $bng->supportedLanguages();
 
-			unset($languageList['en']);
+			unset($this->languageList['en']);
 
 			require_once(e_ADMIN."lancheck.php");
 			$lck = new lancheck;
@@ -1478,10 +1478,12 @@ JS;
 				unset($tmp2['bom'],$tmp2Exst['bom']);
 				$text2 .= $this->renderTable($tmp2, 'plugin',$tmp2Exst);
 
-				//FIXME Addebootstrap3 theme language files.
-			//	$tmp3 = $lck->get_comp_lan_phrases(e_THEME."bootstrap3","English",1);
-			//	unset($tmp2['bom']);
-				//var_dump($tmp3);
+				//FIXME Add bootstrap3 theme language files.
+				$tmp3 = $lck->get_comp_lan_phrases(e_THEME."bootstrap3","English",1);
+				unset($tmp3['bom']);
+
+				e107::getDebug()->log($tmp3);
+
 			//	$text2 .= $this->renderTable($tmp3, 'theme');
 			}
 
