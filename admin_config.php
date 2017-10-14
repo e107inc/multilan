@@ -700,7 +700,7 @@ class multilan_adminArea extends e_admin_dispatcher
 		}
 
 
-		$newFile        = str_replace(array('-core-','-plugin-','English'), array(e_LANGUAGEDIR.'English/', e_PLUGIN, $language), $_SESSION['multilan_lanfilelist'][$id]);
+		$newFile        = str_replace(array('-core-','-plugin-','-theme-','English'), array(e_LANGUAGEDIR.'English/', e_PLUGIN, e_THEME, $language), $_SESSION['multilan_lanfilelist'][$id]);
 
 
 
@@ -767,7 +767,7 @@ class multilan_adminArea extends e_admin_dispatcher
 		}
 
 
-		$transArray = $bng->getTranslation('en', $languageCode, $toTranslate, true, basename($newFile));
+		$transArray = $bng->getTranslation('en', $languageCode, $toTranslate, true, str_replace('../','',$newFile));
 
 		if(!empty($existingArray))
 		{
@@ -1417,6 +1417,15 @@ JS;
 			$lng = e107::getLanguage();
 			$bng = e107::getSingleton('bingTranslate', e_PLUGIN."multilan/bing.class.php");
 
+
+			$authKey = e107::pref('multilan','bing_client_secret');
+
+			if(empty($authKey))
+			{
+				e107::getMessage()->addWarning("Bing Translation requires an API key. Please see the 'Bing' tab in the <a href='".e_PLUGIN."multilan/admin_config.php?mode=main&action=prefs'>preferences</a>");
+				return false;
+			}
+
 			if(!empty($_GET['lanlanguage']))
 			{
 				$title = $lng->convert($_GET['lanlanguage']);
@@ -1658,7 +1667,7 @@ JS;
 				if(!empty($language))
 				{
 
-					$newFile  = str_replace(array('-core-','-plugin-','English'), array(e_LANGUAGEDIR.'English/',  e_PLUGIN, $language), $_SESSION['multilan_lanfilelist'][$id]);
+					$newFile  = str_replace(array('-core-','-plugin-','-theme-','English'), array(e_LANGUAGEDIR.'English/',  e_PLUGIN, e_THEME, $language), $_SESSION['multilan_lanfilelist'][$id]);
 
 					if(file_exists($newFile))
 					{
