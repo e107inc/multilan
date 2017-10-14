@@ -860,8 +860,8 @@ class status_admin_ui extends e_admin_ui
 			'bing_translator'       => array('title' => 'Frontend Auto-Translator', 'type'=>'dropdown', 'tab'=>2,'writeParms'=>array(0=>'Off', 'auto'=>'Auto', 'notify'=>'Notify')),
 
 			'bing_exclude_installed'=>  array('title' => 'Exclude installed languages', 'type'=>'boolean', 'tab'=>2, 'help'=>"If enabled, will exclude languages currently installed in e107 from the available bing translations."),
-			'bing_client_id'    => array('title'=>"Client ID", 'type'=>'text', 'data'=>'str',  'tab'=>2,  'writeParms'=>array('tdClassRight'=>'form-inline','post'=>" <a class='btn btn-primary btn-mini btn-xs' target='_blank' href='https://msdn.microsoft.com/en-us/library/mt146806.aspx'>More Info.</a>")),
-			'bing_client_secret'    => array('title'=>"Client Secret", 'type'=>'text', 'data'=>'str', 'tab'=>2, 'writeParms'=>array('size'=>'xxlarge', 'post'=>"<br /><span class='alert alert-info'>Please note: The maximum throughput is 400,000 characters per hour or 2 million characters a day.</span>")),
+		//	'bing_client_id'    => array('title'=>"Client ID", 'type'=>'text', 'data'=>'str',  'tab'=>2,  'writeParms'=>array('tdClassRight'=>'form-inline','post'=>" <a class='btn btn-primary btn-mini btn-xs' target='_blank' href='https://msdn.microsoft.com/en-us/library/mt146806.aspx'>More Info.</a>")),
+			'bing_client_secret'    => array('title'=>"Authentication Key 1", 'type'=>'text', 'data'=>'str', 'tab'=>2, 'writeParms'=>array('tdClassRight'=>'form-inline', 'size'=>'xxlarge', 'post'=>"&nbsp;<a target='_blank' title=\"More Information\" href='https://www.microsoft.com/en-us/translator/getstarted.aspx'><span class='fa fa-info-circle'></span></a><div>Please note: The maximum throughput is 400,000 characters per hour or 2 million characters a day.</div>")),
 
 			'admin_translations_tab'  => array('title'=> "Translations Tab Class", 'tab'=>4, 'type'=>'userclass', 'help'=>'Class who can view the status of translations when editing news items'),
 
@@ -1434,6 +1434,12 @@ JS;
 				$tmp2 = $lck->get_comp_lan_phrases(e_PLUGIN,"English",3);
 				unset($tmp2['bom']);
 				$text2 .= $this->renderTable($tmp2, 'plugin');
+
+				//FIXME Added bootstrap3 theme language files.
+			//	$tmp3 = $lck->get_comp_lan_phrases(e_THEME."bootstrap3","English",1);
+			//	unset($tmp2['bom']);
+				//var_dump($tmp3);
+			//	$text2 .= $this->renderTable($tmp3, 'theme');
 			}
 
 			$text2 .= $frm->close();

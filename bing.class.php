@@ -19,13 +19,40 @@
 		private $_urlPost       = 'http://api.microsofttranslator.com/v2/Http.svc/TranslateArray';
 		private $_method        = 'post';
 		private $_paragraphs    = false;
+		private $_debug         = false;
+		private $_xml           = false;
 
 		public function __construct()
 		{
 
 			$this->_client_id = e107::pref('multilan', 'bing_client_id');
 			$this->_client_secret = e107::pref('multilan', 'bing_client_secret');
+
 		}
+
+
+		/**
+		 * @param string $value
+		 * @param bool   $xml - enable if testing a returned XML from Bing.
+		 */
+		public function test($value="Hello World!", $xml=false)
+		{
+			$this->_debug = true;
+
+			 $languageCode = 'fr';
+
+			 $this->_xml = $xml;
+
+			 $newValue = $this->getTranslation('en', $languageCode, $value, true);
+
+			  echo "<h3>Submitted</h3>";
+			 print_a($value);
+
+			 echo "<h3>Result</h3>";
+			 print_a($newValue);
+
+		}
+
 
 		public function supportedLanguages()
 		{
@@ -77,7 +104,7 @@
 			);
 
 		}
-
+/*
 		public function getResponse($url)
 		{
 
@@ -94,13 +121,38 @@
 
 			return $response;
 		}
+*/
+
+		function getToken()
+		{
+		    $url = 'https://api.cognitive.microsoft.com/sts/v1.0/issueToken';
+		    $ch = curl_init();
+		    $data_string = json_encode('{body}');
+		    curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+		    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+		            'Content-Type: application/json',
+		            'Content-Length: ' . strlen($data_string),
+		            'Ocp-Apim-Subscription-Key: ' . $this->_client_secret
+		        )
+		    );
+		    curl_setopt($ch, CURLOPT_URL, $url);
+		    curl_setopt($ch, CURLOPT_HEADER, false);
+		    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		    $strResponse = curl_exec($ch);
+		    curl_close($ch);
+		    return $strResponse;
+		}
 
 
-		public function getToken()
+/*
+
+		public function getTokenOld()
 		{
 
 			if(!empty($this->_token))
 			{
+				$this->log("No Token Pref Found");
 				return $this->_token;
 			}
 
@@ -115,6 +167,11 @@
 
 			$response = curl_exec($curl);
 
+		//	if(empty($response))
+			{
+				$this->log("getToken() Response:\n".$response."\n");
+			}
+
 			curl_close($curl);
 
 			$resp = json_decode($response);
@@ -122,31 +179,77 @@
 
 			return $resp->access_token;
 		}
-
+*/
 
 		public function getTranslation($fromLanguage, $toLanguage, $text, $returnArray=false)
 		{
 
-			if($this->_method == 'get')
+			if(empty($text))
 			{
-				$response = $this->getResponse($this->getURL($fromLanguage, $toLanguage, $text));
-				$response = strip_tags($response);
-				$decoded = html_entity_decode($response, null, 'UTF-8');
+				$this->log("Translation text was empty");
+				return false;
+			}
+
+			if($this->_method == 'get') // unused.
+			{
+			//	$response = $this->getResponse($this->getURL($fromLanguage, $toLanguage, $text));
+			//	$response = strip_tags($response);
+			//	$decoded = html_entity_decode($response, null, 'UTF-8');
 			}
 			else // 'post'
 			{
-				if(is_array($text))
+				if($this->_xml === true)
+				{
+					$textArray = trim($text);
+				}
+				elseif(is_array($text))
 				{
 					$textArray = $text;
 					$arrayKeys = array_keys($text);
+
+
+
+					if($this->_debug === true)
+					{
+
+					}
 				}
 				else
 				{
 					$textArray = $this->getParagraphs($text);
 				}
 
-				$requestXml = $this->createXMLRequest($fromLanguage, $toLanguage, $textArray, 'text/html');
+				if(count($textArray) > 2000)
+				{
+					$this->log("More than 2000 translation elements detected.");
+					return false;
+				}
+
+
+
+
+				if($this->_xml === true)
+				{
+					$requestXml = $textArray;
+				}
+				else
+				{
+					$requestXml = $this->createReqXML($fromLanguage, $toLanguage, 'text/html', $textArray);
+				}
+
+				if($this->_debug === true)
+				{
+					echo "<h3>createReqXML</h3>";
+					var_dump($requestXml);
+				}
+
 				$transArray = $this->getXMLResponse($requestXml);
+
+				if($this->_debug === true)
+				{
+					echo "<h3>getXMLResponse</h3>";
+					var_dump($transArray);
+				}
 
 			//	$transArray = $textArray;
 
@@ -198,13 +301,68 @@
 		 * @param $toLanguage
 		 * @param $text
 		 * @return string
-		 */
+		 *//*
 		public function getURL($fromLanguage, $toLanguage, $text)
 		{
+			$params = "text=" . urlencode($text) . "&to=" . $toLanguage . "&from=" . $fromLanguage . "&appId=Bearer+" . $accessToken;
+$translateUrl = "http://api.microsofttranslator.com/v2/Http.svc/Translate?$params";
 			return 'http://api.microsofttranslator.com/v2/Http.svc/Translate?text='.urlencode($text).'&to='.$toLanguage.'&from='.$fromLanguage.'&contentType=text/plain';
-		}
+		}*/
 
 
+
+
+
+
+	    /*
+	     * Create Request XML Format.
+	     *
+	     * @param string $fromLanguage   Source language Code.
+	     * @param string $toLanguage     Target language Code.
+	     * @param string $contentType    Content Type.
+	     * @param string $inputStrArr    Input String Array.
+	     *
+	     * @return string.
+	     */
+	    function createReqXML($fromLanguage,$toLanguage,$contentType,$inputStr)
+	    {
+		    if(is_string($inputStr))
+			{
+				$data = array($inputStr);
+			}
+			else
+			{
+				$data = $inputStr;
+			}
+
+
+
+	        $requestXml = "<TranslateArrayRequest>".
+	            "<AppId/>".
+	            "<From>$fromLanguage</From>".
+	            "<Options>" .
+	             "<Category xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" .
+	              "<ContentType xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\">$contentType</ContentType>" .
+	              "<ReservedFlags xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" .
+	              "<State xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" .
+	              "<Uri xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" .
+	              "<User xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" .
+	            "</Options>" .
+	            "<Texts>";
+	        foreach ($data as $str)
+	        {
+	            $str = htmlspecialchars($str);
+	            $requestXml .=  "<string xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\">$str</string>" ;
+	        }
+
+	        $requestXml .= "</Texts>".
+	            "<To>$toLanguage</To>" .
+	          "</TranslateArrayRequest>";
+
+
+
+	        return $requestXml;
+	    }
 
 		/**
 		 * Create Request XML Format.
@@ -260,24 +418,79 @@
 		}
 
 
+		private function log($message)
+		{
+			file_put_contents(e_LOG."multilan_bing.log", "\n\n\n".date('r')."\t\t".$message, FILE_APPEND);
+
+		}
+
+
+		/*
+         * Create and execute the HTTP CURL request.
+	     *
+	     * @param string $url        HTTP Url.
+	     * @param string $authHeader Authorization Header string.
+	     * @param string $postData   Data to post.
+	     *
+	     * @return string.
+	     *
+	     */
+	    function curlRequest($url, $authHeader, $postData='')
+	    {
+
+	        $ch = curl_init();
+
+	        curl_setopt ($ch, CURLOPT_URL, $url);
+	        curl_setopt ($ch, CURLOPT_HTTPHEADER, array($authHeader,"Content-Type: text/xml")); //; charset=UTF-8
+	        curl_setopt ($ch, CURLOPT_RETURNTRANSFER, true);
+	        curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+	        if($postData)
+	        {
+	            curl_setopt($ch, CURLOPT_POST, true);
+	            curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+	        }
+
+	        $curlResponse = curl_exec($ch);
+	        $curlErrno = curl_errno($ch);
+
+	        if ($curlErrno)
+	        {
+	            $curlError = curl_error($ch);
+	            $this->log($curlError);
+	            throw new Exception($curlError);
+	        }
+
+	        curl_close($ch);
+
+	        return $curlResponse;
+	    }
 
 
 
-
-
-
-		function getXMLResponse($postData='')
+		function getXMLResponse($requestXml='')
 		{
 
-			if(empty($postData))
+			if(empty($requestXml))
 			{
+				if($this->_debug=== true)
+				{
+					echo 'requestXml was empty';
+				}
+
 				return '';
 			}
 
 			$ret = array();
 
 			$authHeader = "Authorization: Bearer ". $this->getToken();
-			$url = $this->_urlPost;
+
+			if($this->_debug === true)
+			{
+				echo "<br />".$authHeader;
+			}
+
+/*			$url = $this->_urlPost;
 			$ch = curl_init();
 
 			curl_setopt ($ch, CURLOPT_URL, $url);
@@ -293,20 +506,21 @@
 			}
 
 			$curlResponse = curl_exec($ch);
+			*/
 
-			file_put_contents(e_LOG."multilan_bing.log", "\n\n\n".$curlResponse, FILE_APPEND);
 
-			$curlErrno = curl_errno($ch);
-			if ($curlErrno)
+			$curlResponse = $this->curlRequest($this->_urlPost, $authHeader, $requestXml);
+
+			if($this->_debug === true)
 			{
-				$curlError = curl_error($ch);
-
-
-				throw new Exception($curlError);
-
+				echo print_a($curlResponse);
 			}
-			else
-			{
+
+			$this->log("curlResponse:\n\n".$curlResponse);
+
+
+			try {
+
 				// print_a($curlResponse);
 				$xml = e107::getXml();
 				$xml->setOptArrayTags('TranslateArrayResponse');
@@ -321,11 +535,22 @@
 					}
 				}
 
+				if(!empty($ret))
+				{
+					return $ret;
+				}
+
+				$this->log("Empty Response for: \n\n".$requestXml."\n\n\n");
+
+			}
+			catch (Exception $e)
+			{
+				$message = "Exception: " . $e->getMessage();
+				$this->log($message);
 
 			}
 
-			curl_close($ch);
-			return (!empty($ret)) ? $ret : '';
+			return false;
 
 
 		}
