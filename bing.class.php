@@ -21,6 +21,8 @@
 		private $_paragraphs    = false;
 		private $_debug         = false;
 		private $_xml           = false;
+		private $_tag           = null;
+		private $_maxChars      = 5500;
 
 		public function __construct()
 		{
@@ -181,14 +183,23 @@
 		}
 */
 
-		public function getTranslation($fromLanguage, $toLanguage, $text, $returnArray=false)
+		public function getTranslation($fromLanguage, $toLanguage, $text, $returnArray=false, $tag=null)
 		{
+
+			if(!empty($tag))
+			{
+				$this->_tag = $tag;
+			}
+
+			$this->log("-----------------------------");
 
 			if(empty($text))
 			{
 				$this->log("Translation text was empty");
 				return false;
 			}
+
+
 
 			if($this->_method == 'get') // unused.
 			{
@@ -349,17 +360,30 @@ $translateUrl = "http://api.microsofttranslator.com/v2/Http.svc/Translate?$param
 	              "<User xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" .
 	            "</Options>" .
 	            "<Texts>";
+
+	         $count = 0;
+	         $charCount = 0;
 	        foreach ($data as $str)
 	        {
+
+	            if($charCount > $this->_maxChars || $count > 10000)
+				{
+					$this->log("Max Character Count (".$this->_maxChars.") Exceeded - Skipping remainder.");
+					break;
+				}
+
 	            $str = htmlspecialchars($str);
+	            $charCount = $charCount + strlen($str);
 	            $requestXml .=  "<string xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\">$str</string>" ;
+
+				$count++;
 	        }
 
 	        $requestXml .= "</Texts>".
 	            "<To>$toLanguage</To>" .
 	          "</TranslateArrayRequest>";
 
-
+			$this->log("Character Count: ".$charCount);
 
 	        return $requestXml;
 	    }
@@ -373,7 +397,7 @@ $translateUrl = "http://api.microsofttranslator.com/v2/Http.svc/Translate?$param
 		 * @param string $inputStrArr    Input String Array.
 		 *
 		 * @return string.
-		 */
+		 *//*
 		function createXMLRequest($fromLanguage, $toLanguage,  $inputStr, $contentType)
 		{
 
@@ -402,10 +426,12 @@ $translateUrl = "http://api.microsofttranslator.com/v2/Http.svc/Translate?$param
 				"</Options>" .
 				"<Texts>";
 
+				$count= 0;
 				foreach($data as $str)
 				{
 					$str = htmlspecialchars($str);
 					$requestXml .=  "<string xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\">".$str."</string>" ;
+
 				}
 
 			$requestXml .= "</Texts>".
@@ -416,11 +442,11 @@ $translateUrl = "http://api.microsofttranslator.com/v2/Http.svc/Translate?$param
 		//	print_a($requestXml);
 			return $requestXml;
 		}
-
+*/
 
 		private function log($message)
 		{
-			file_put_contents(e_LOG."multilan_bing.log", "\n\n\n".date('r')."\t\t".$message, FILE_APPEND);
+			file_put_contents(e_LOG."multilan_bing.log", "\n".date('r')."\t\t".$this->_tag."\t\t".$message, FILE_APPEND);
 
 		}
 
@@ -475,9 +501,11 @@ $translateUrl = "http://api.microsofttranslator.com/v2/Http.svc/Translate?$param
 			{
 				if($this->_debug=== true)
 				{
+
 					echo 'requestXml was empty';
 				}
 
+				$this->log('requestXml was empty');
 				return '';
 			}
 
@@ -516,8 +544,11 @@ $translateUrl = "http://api.microsofttranslator.com/v2/Http.svc/Translate?$param
 				echo print_a($curlResponse);
 			}
 
-			$this->log("curlResponse:\n\n".$curlResponse);
-
+			if(empty($curlResponse))
+			{
+				$this->log("Empty XML Response from Bing");
+				return false;
+			}
 
 			try {
 
@@ -537,10 +568,12 @@ $translateUrl = "http://api.microsofttranslator.com/v2/Http.svc/Translate?$param
 
 				if(!empty($ret))
 				{
+					$this->log('Success!');
 					return $ret;
 				}
 
-				$this->log("Empty Response for: \n\n".$requestXml."\n\n\n");
+
+				$this->log("Empty Parsed XML Response");
 
 			}
 			catch (Exception $e)

@@ -582,7 +582,7 @@ class multilan_adminArea extends e_admin_dispatcher
 
 	private function logAjax()
 	{
-		if(E107_DBG_BASIC)
+	//	if(E107_DBG_BASIC)
 		{
 			$log = e107::getLog();
 			$log->toFile('multilan',"Multi-Language Plugin Log", true);
@@ -712,7 +712,7 @@ class multilan_adminArea extends e_admin_dispatcher
 
 		if(file_exists($newFile))
 		{
-			return false;
+	//		return false;
 		}
 
 		$srch = array('en', 'GB', 'US', 'gb');
@@ -722,7 +722,25 @@ class multilan_adminArea extends e_admin_dispatcher
 		$lc2 = strtoupper($languageCode);
 
 
-		$toTranslate = $_SESSION['multilan_lanfiledata'][$id];
+		$existingArray  = null;
+
+		if(!empty($_SESSION['multilan_lanfiledata_existing'][$id])) // Existing file, so find what hasn't been translated yet.
+		{
+			$this->logDebug(basename($newFile), "Existing File detected");
+			$toTranslate = array_diff_key($_SESSION['multilan_lanfiledata'][$id],$_SESSION['multilan_lanfiledata_existing'][$id]);
+		//	$existingArray = $_SESSION['multilan_lanfiledata_existing'][$id];
+		}
+		else
+		{
+			$toTranslate = $_SESSION['multilan_lanfiledata'][$id];
+		}
+
+		if(empty($toTranslate))
+		{
+			return false;
+		}
+
+
 
 		foreach($toTranslate as $k=>$v)
 		{
@@ -749,18 +767,33 @@ class multilan_adminArea extends e_admin_dispatcher
 		}
 
 
+		$transArray = $bng->getTranslation('en', $languageCode, $toTranslate, true, basename($newFile));
+
+		if(!empty($existingArray))
+		{
+		//	$transArray = array_merge($existingArray,$transArray);
+		}
+
+		if(!empty($transArray))
+		{
+		/*	$message = print_r($transArray,true);
+			$tag = basename($newFile);
+			$this->logDebug($tag,$message);*/
+			$this->writeFile($newFile, $transArray);
+			return true;
+		}
+
+		return false;
 
 
-
-		$transArray = $bng->getTranslation('en', $languageCode, $toTranslate, true);
-		$this->writeFile($newFile, $transArray);
-
-		return true;
 
 
 	}
 
-
+	private function logDebug($tag, $message)
+	{
+		file_put_contents(e_LOG."multilan_bing.log", "\n".date('r')."\t\t".$tag."\t\t".$message, FILE_APPEND);
+	}
 
 
 	private function writeFile($file, $key, $value='', $opt = '')
@@ -769,7 +802,7 @@ class multilan_adminArea extends e_admin_dispatcher
 
 		$dir =  dirname($file);
 
-		file_put_contents(e_LOG."multilanBing.log", date('r')."\t\tDirectory ".$dir."\n", FILE_APPEND);
+	//	file_put_contents(e_LOG."multilanBing.log", date('r')."\t\tDirectory ".$dir."\n", FILE_APPEND);
 
 
 
@@ -872,6 +905,7 @@ class status_admin_ui extends e_admin_ui
 		protected $languageTables = array();
 		protected $totalCharCount  = 0;
 		protected $localPacks = array();
+		protected $languageList = array();
 
 		function init()
 		{
@@ -1396,7 +1430,7 @@ JS;
 
 			$_SESSION['multilan_lanfilelist'] = array();
 
-			$languageList = $bng->supportedLanguages();
+			$this->languageList = $bng->supportedLanguages();
 
 			unset($languageList['en']);
 
@@ -1414,12 +1448,13 @@ JS;
 
 			if(empty($_GET['lanlanguage']))
 			{
-				$text .= $frm->select('lanlanguage', $languageList, varset($_GET['lanlanguage']), array('class'=>'filter'), 'Select Language');
+				$text .= $frm->select('lanlanguage', $this->languageList, varset($_GET['lanlanguage']), array('class'=>'filter'), 'Select Language');
 			}
 			else
 			{
 				$text .= $frm->hidden('lanlanguage',$_GET['lanlanguage'],array('id'=>'lanlanguage'));
 				$text .= "<button type='button' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' value='Download and Install' data-src='".e_SELF."' ><span>Bing Translate</span></button>";
+				$text .= " <span id='total-status'></span>";
 			}
 			$text .= "</div>";
 
@@ -1427,15 +1462,23 @@ JS;
 
 			if(!empty($_GET['lanlanguage']))
 			{
+				$newLanguage = $title;
+
 				$tmp = $lck->get_comp_lan_phrases(e_LANGUAGEDIR."English/","English",1);
-				unset($tmp['bom']);
-				$text2 .= $this->renderTable($tmp, 'core');
+				$tmpExst = $lck->get_comp_lan_phrases(e_LANGUAGEDIR.$newLanguage."/",$newLanguage,1);
+				unset($tmp['bom'],$tmpExst['bom']);
+
+				$text2 .= $this->renderTable($tmp, 'core',$tmpExst);
 
 				$tmp2 = $lck->get_comp_lan_phrases(e_PLUGIN,"English",3);
-				unset($tmp2['bom']);
-				$text2 .= $this->renderTable($tmp2, 'plugin');
+				$tmp2Exst = $lck->get_comp_lan_phrases(e_PLUGIN,$newLanguage,3);
 
-				//FIXME Added bootstrap3 theme language files.
+				$tmp2Exst = $this->resetKeysToEnglish($tmp2Exst);
+
+				unset($tmp2['bom'],$tmp2Exst['bom']);
+				$text2 .= $this->renderTable($tmp2, 'plugin',$tmp2Exst);
+
+				//FIXME Addebootstrap3 theme language files.
 			//	$tmp3 = $lck->get_comp_lan_phrases(e_THEME."bootstrap3","English",1);
 			//	unset($tmp2['bom']);
 				//var_dump($tmp3);
@@ -1457,11 +1500,13 @@ JS;
 
 					var lancode = $('#lanlanguage').val();
 
-					if(lancode == '' || lancode === undefined)
+					if(lancode === '' || lancode === undefined)
 					{
 						alert("No Language Selected");
 						return false;
 					}
+					
+					$('#total-status').html('<i class="fa fa-spin fa-spinner"></i>');
 
 
 					$('#' + form).find('.lanfile').each(function(e){
@@ -1495,6 +1540,8 @@ JS;
 
 
 					});
+					
+					$('#total-status').html('');
 
 					alert('Complete');
 					return false;
@@ -1518,8 +1565,25 @@ JS;
 		}
 
 
+		function resetKeysToEnglish($array)
+		{
+			if(empty($array))
+			{
+				return $array;
+			}
 
-		private function renderTable($data, $mode)
+			$newArray = array();
+			foreach($array as $k=>$v)
+			{
+				$key = str_replace($this->languageList,'English',$k);
+				$newArray[$key] = $v;
+			}
+
+			return $newArray;
+		}
+
+
+		private function renderTable($data, $mode, $existing)
 		{
 			$frm = e107::getForm();
 			$lng = e107::getLanguage();
@@ -1542,31 +1606,57 @@ JS;
 				<colgroup>
 					<col />
 					<col style='width:10%' />
+					<col style='width:10%' />
 					<col style='width:50%' />
 				</colgroup>
 				<thead>
 				<tr class='first'>
 				<th>".$toggleButton." <span style='vertical-align: bottom;'>Language File</span></th>
+				<th class='right' style='padding-right:40px'>Translated</th>
 				<th class='right' style='padding-right:40px'>Character Count</th>
 				<th>".LAN_STATUS."</th></tr>
 				</thead>";
 
-
+		//	var_dump($data);
+			if(!empty($existing))
+			{
+		//		var_dump($existing);
+			}
 
 			foreach($data as $file => $lans)
 			{
+
 				$id = $frm->name2id($file);
 				$status = '-';
 
 				$_SESSION['multilan_lanfilelist'][$id] = '-'.$mode.'-'.$file;
 				$_SESSION['multilan_lanfiledata'][$id] = $lans;
+				$_SESSION['multilan_lanfiledata_existing'][$id] = null;
+
+				$origCount = count($lans);
+				$lanCount = 0;
+
+				if(!empty($existing[$file]))
+				{
+					//$status .= "Exists ";
+					$newid = str_replace($this->languageList,'english',$id);
+					$_SESSION['multilan_lanfiledata_existing'][$newid] = $existing[$file];
+					$lanCount = count($existing[$file]);
+
+				}
+				else
+				{
+					$lanCount = " Missing :".$file;
+				}
+				//var_dump($id);
+				//	var_dump($newid);
 
 				$charCount = $this->countChars($lans);
 
 				if(!empty($language))
 				{
 
-					$newFile  = str_replace(array('-core-','-plugin-','English'), array(e_LANGUAGEDIR.'English/', e_PLUGIN, $language), $_SESSION['multilan_lanfilelist'][$id]);
+					$newFile  = str_replace(array('-core-','-plugin-','English'), array(e_LANGUAGEDIR.'English/',  e_PLUGIN, $language), $_SESSION['multilan_lanfilelist'][$id]);
 
 					if(file_exists($newFile))
 					{
@@ -1580,12 +1670,26 @@ JS;
 					<td id='".$id."' class='lanfile'>
 						<label class='checkbox'><input name='lancheckbox[]' value='1' id='check-".$id."' type='checkbox'>".$file."</label>
 					</td>
+					<td class='right' style='padding-right:40px'>".$this->getPerc($lanCount,$origCount)."</td>
 					<td class='right' style='padding-right:40px'>".$charCount."</td>
 					<td id='status-".$id."'>".$status."</td>
 				</tr>";
 			}
 
 			$text .= "</table>";
+
+
+
+			return $text;
+		}
+
+		private function getPerc($lanCount,$origCount)
+		{
+		//	return $lanCount .' / '.$origCount;
+
+			$val = round(($lanCount / $origCount) * 100);
+
+			$text = ($val != 100) ? "<span class='text-warning'>".$val."%</span>" : $val . '%';
 
 			return $text;
 		}
