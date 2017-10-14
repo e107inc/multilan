@@ -1664,14 +1664,35 @@ JS;
 
 				$charCount = $this->countChars($lans);
 
+				$preFile = '';
+				$postFile = '';
+
 				if(!empty($language))
 				{
 
 					$newFile  = str_replace(array('-core-','-plugin-','-theme-','English'), array(e_LANGUAGEDIR.'English/',  e_PLUGIN, e_THEME, $language), $_SESSION['multilan_lanfilelist'][$id]);
+					$origFile  = str_replace(array('-core-','-plugin-','-theme-'), array('',  e_PLUGIN, e_THEME), $_SESSION['multilan_lanfilelist'][$id]);
+
+
 
 					if(file_exists($newFile))
 					{
+						$typeArray = array('core'=>'', 'plugin'=>'P', 'theme'=>'T');
+						$parms = array();
+						$parms['mode'] = 'main';
+						$parms['action'] = 'tools';
+						$parms['sub'] = 'edit';
+						$parms['file'] = str_replace('../../','../',$origFile);
+						$parms['lan'] = $language;
+						$parms['iframe'] = 1;
+						$parms['type'] = $typeArray[$mode];
+
+						$editUrl = e_ADMIN."language.php?".http_build_query($parms,'&amp;');
+
+
 						$status = ADMIN_TRUE_ICON; // e107::getParser()->toGlyph('fa-check');
+						$preFile= "<a href='".$editUrl."' class='e-modal' data-modal-caption=\"".str_replace('../','',$newFile)."\">";
+						$postFile = '</a>';
 					}
 				}
 
@@ -1679,7 +1700,7 @@ JS;
 				<tr>
 
 					<td id='".$id."' class='lanfile'>
-						<label class='checkbox'><input name='lancheckbox[]' value='1' id='check-".$id."' type='checkbox'>".$file."</label>
+						<label class='checkbox'><input name='lancheckbox[]' value='1' id='check-".$id."' type='checkbox'>".$preFile.$file.$postFile."</label>
 					</td>
 					<td class='right' style='padding-right:40px'>".$this->getPerc($lanCount,$origCount)."</td>
 					<td class='right' style='padding-right:40px'>".$charCount."</td>
