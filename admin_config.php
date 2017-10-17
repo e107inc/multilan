@@ -986,6 +986,7 @@ class status_admin_ui extends e_admin_ui
 		protected $totalCharCount  = 0;
 		protected $localPacks = array();
 		protected $languageList = array();
+		protected $lck = null;
 
 		function init()
 		{
@@ -1488,9 +1489,10 @@ JS;
 		}
 
 
-
-
-
+		/**
+		 * Core Translator Page.
+		 * @return string
+		 */
 		public function corePage()
 		{
 			$frm = e107::getForm();
@@ -1524,8 +1526,8 @@ JS;
 			unset($this->languageList['en']);
 
 			require_once(e_ADMIN."lancheck.php");
-			$lck = new lancheck;
-			$lck->thirdPartyPlugins(false);
+			$this->lck = new lancheck;
+			$this->lck->thirdPartyPlugins(false);
 
 
 			$text = $frm->open('corePage', 'get', e_SELF);
@@ -1556,22 +1558,22 @@ JS;
 			{
 				$newLanguage = $title;
 
-				$tmp = $lck->get_comp_lan_phrases(e_LANGUAGEDIR."English/","English",1);
-				$tmpExst = $lck->get_comp_lan_phrases(e_LANGUAGEDIR.$newLanguage."/",$newLanguage,1);
+				$tmp = $this->lck->get_comp_lan_phrases(e_LANGUAGEDIR."English/","English",1);
+				$tmpExst = $this->lck->get_comp_lan_phrases(e_LANGUAGEDIR.$newLanguage."/",$newLanguage,1);
 				unset($tmp['bom'],$tmpExst['bom']);
 
 				$text2 .= $this->renderTable($tmp, 'core',$tmpExst);
 
-				$tmp2 = $lck->get_comp_lan_phrases(e_PLUGIN,"English",3);
-				$tmp2Exst = $lck->get_comp_lan_phrases(e_PLUGIN,$newLanguage,3);
+				$tmp2 = $this->lck->get_comp_lan_phrases(e_PLUGIN,"English",3);
+				$tmp2Exst = $this->lck->get_comp_lan_phrases(e_PLUGIN,$newLanguage,3);
 
 				$tmp2Exst = $this->resetKeysToEnglish($tmp2Exst);
 
 				unset($tmp2['bom'],$tmp2Exst['bom']);
 				$text2 .= $this->renderTable($tmp2, 'plugin',$tmp2Exst);
 
-				$tmp3 = $lck->get_comp_lan_phrases(e_THEME,"English",3);
-				$tmp3Exst = $lck->get_comp_lan_phrases(e_THEME, $newLanguage,3);
+				$tmp3 = $this->lck->get_comp_lan_phrases(e_THEME,"English",3);
+				$tmp3Exst = $this->lck->get_comp_lan_phrases(e_THEME, $newLanguage,3);
 				unset($tmp3['bom']);
 
 				$tmp3Exst = $this->resetKeysToEnglish($tmp3Exst);
@@ -1702,14 +1704,16 @@ JS;
 					<col />
 					<col style='width:10%' />
 					<col style='width:10%' />
-					<col style='width:50%' />
+					<col style='width:10%' />
+					<col style='width:40%' />
 				</colgroup>
 				<thead>
 				<tr class='first'>
 				<th>".$toggleButton." <span style='vertical-align: bottom;'>Language File</span></th>
 				<th class='right' style='padding-right:40px'>Translated</th>
 				<th class='right' style='padding-right:40px'>Character Count</th>
-				<th>".LAN_STATUS."</th></tr>
+				<th>".LAN_STATUS."</th>
+				<th>Comments</th></tr>
 				</thead>";
 
 		//	var_dump($data);
@@ -1795,12 +1799,29 @@ JS;
 					<td class='right' style='padding-right:40px'>".$this->getPerc($lanCount,$origCount)."</td>
 					<td class='right' style='padding-right:40px'>".$charCount."</td>
 					<td id='status-".$id."'>".$status."</td>
+					<td>".$this->getDefErrors($id)."</td>
 				</tr>";
 			}
 
 			$text .= "</table>";
 
 
+
+			return $text;
+		}
+
+
+		private function getDefErrors($id)
+		{
+			$text = '<small>';
+			$opts = array('no-warning'=>true);
+
+			foreach($_SESSION['multilan_lanfiledata'][$id] as $def =>$val)
+			{
+				$text .=$this->lck->check_lan_errors($_SESSION['multilan_lanfiledata'][$id],$_SESSION['multilan_lanfiledata_existing'][$id], $def, $opts);
+			}
+
+			$text .= "</small>";
 
 			return $text;
 		}
