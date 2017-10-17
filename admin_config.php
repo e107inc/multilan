@@ -288,21 +288,13 @@ class multilan_adminArea extends e_admin_dispatcher
 
 		$diff = array_diff_key($tmp2,$tmp);
 
-		if(empty($diff))
-		{
-			return null;
-		}
+		$keys = (!empty($diff)) ? array_keys($diff) : null;
 
 		require_once(e_ADMIN."lancheck.php");
 		$lck = new lancheck;
 
-		$keys = array_keys($diff);
-		// print_r($keys);
 
-		return $lck->commentOut($keys,$path);
-
-
-
+		return $lck->cleanFile($path, $keys);
 
 	}
 
@@ -1551,9 +1543,9 @@ JS;
 			{
 				$text .= $frm->hidden('lanlanguage',$_GET['lanlanguage'],array('id'=>'lanlanguage'));
 				$text .= "<button type='button' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' data-action='bing' value='Translate' data-src='".e_SELF."' ><span>".ADMIN_BING_ICON." Bing Translate</span></button>";
-				$text .= "<button type='button' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' data-action='comment' value='Comment Out Deprecated LANs' data-src='".e_SELF."' ><span>".ADMIN_CLEAN_ICON." CleanUp LANs</span></button>";
+				$text .= "<button type='button' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' data-action='comment' value='Comment Out Deprecated LANs' data-src='".e_SELF."' ><span>".ADMIN_CLEAN_ICON." Cleanup</span></button>";
 
-				$text .= "<a class='btn btn-primary' href='".e_SELF."'>".ADMIN_REFRESH_ICON." Refresh</a>";
+				$text .= "<a class='btn btn-primary' href='".e_REQUEST_URI."'>".ADMIN_REFRESH_ICON." Refresh</a>";
 				$text .= " <span id='total-status'></span>";
 			}
 			$text .= "</div>";
