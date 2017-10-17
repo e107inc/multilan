@@ -1786,11 +1786,13 @@ JS;
 						$editUrl = e_ADMIN."language.php?".http_build_query($parms,'&amp;');
 
 
-						$status = ADMIN_TRUE_ICON; // e107::getParser()->toGlyph('fa-check');
+						$status = ($lanCount !== $origCount) ?  ADMIN_WARNING_ICON : ADMIN_TRUE_ICON; // e107::getParser()->toGlyph('fa-check');
 						$preFile= "<a href='".$editUrl."' class='e-modal' data-modal-caption=\"".str_replace('../','',$newFile)."\">";
 						$postFile = '</a>';
 					}
 				}
+
+
 
 				$text .= "
 				<tr>
@@ -1815,9 +1817,9 @@ JS;
 		{
 		//	return $lanCount .' / '.$origCount;
 
-			$val = round(($lanCount / $origCount) * 100);
+			$val = round(($lanCount / $origCount) * 100,1);
 
-			if($val> 100)
+			if($val > 100)
 			{
 				return "<span class='text-danger'>".$val."%</span>";
 			}
