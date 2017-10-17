@@ -26,6 +26,9 @@ if(!empty($_GET['iframe']))
 
 define('ADMIN_BING_ICON', "<img src='".e_PLUGIN."multilan/images/bing_16.png' class='auto-translated' alt='auto-translated' />");
 define('ADMIN_FLAG_ICON', "<img src='".e_PLUGIN."multilan/images/flag_16.png' class='un-translated' alt='un-translated' />");
+define('ADMIN_CLEAN_ICON', "<span class='fa fa-star-o'></span>");
+define('ADMIN_REFRESH_ICON',  "<span class='fa fa-refresh'></span>");
+
 
 e107::css('inline', "
 
@@ -201,20 +204,105 @@ class multilan_adminArea extends e_admin_dispatcher
 
 		}
 
-
-		if(!empty($_GET['lanid']) && !empty($_GET['language']) )
+		if(!empty($_GET['action']) && !empty($_GET['lanid']) && !empty($_GET['language']) )
 		{
-			if($this->translateFile($_GET['lanid'],$_GET['language']))
+
+			switch($_GET['action'])
 			{
-				echo ADMIN_BING_ICON; // e107::getParser()->toGlyph('fa-check');
+				case "bing":
+
+					if($this->translateFile($_GET['lanid'],$_GET['language']))
+					{
+						echo ADMIN_BING_ICON; // e107::getParser()->toGlyph('fa-check');
+					}
+					else
+					{
+						echo ADMIN_WARNING_ICON;
+					}
+
+					break;
+
+				case "comment":
+
+					if($this->cleanFile($_GET['lanid'],$_GET['language']))
+					{
+						echo ADMIN_CLEAN_ICON; // e107::getParser()->toGlyph('fa-check');
+					}
+					else
+					{
+						echo ADMIN_WARNING_ICON;
+					}
+
+					break;
+
+				default:
+					// code to be executed if n is different from all labels;
 			}
-			else
+/*
+
+			if(!empty($_GET['lanid']) && !empty($_GET['language']) )
 			{
-				echo ADMIN_WARNING_ICON;
+				if($this->translateFile($_GET['lanid'],$_GET['language']))
+				{
+					echo ADMIN_BING_ICON; // e107::getParser()->toGlyph('fa-check');
+				}
+				else
+				{
+					echo ADMIN_WARNING_ICON;
+				}
 			}
+
+			if(!empty($_GET['lanid']) && !empty($_GET['language']) )
+			{
+				if($this->commentFile($_GET['lanid'],$_GET['language']))
+				{
+					//echo ADMIN_BING_ICON; // e107::getParser()->toGlyph('fa-check');
+				}
+				else
+				{
+					//echo ADMIN_WARNING_ICON;
+				}
+			}*/
+		}
+		exit;
+
+	}
+
+
+	private function cleanFile($id,$lan)
+	{
+
+		$_SESSION['multilan_lanfiledata'][$id] ;
+
+		if(empty($_SESSION['multilan_lanfilelist_existing'][$id]))
+		{
+			return null;
 		}
 
-		exit;
+		$path = $_SESSION['multilan_lanfilelist_existing'][$id];
+
+		$tmp = $_SESSION['multilan_lanfiledata'][$id];
+		$tmp2 = $_SESSION['multilan_lanfiledata_existing'][$id];
+
+		unset($tmp['bom'],$tmp2['bom']);
+
+		$diff = array_diff_key($tmp2,$tmp);
+
+		if(empty($diff))
+		{
+			return null;
+		}
+
+		require_once(e_ADMIN."lancheck.php");
+		$lck = new lancheck;
+
+		$keys = array_keys($diff);
+		// print_r($keys);
+
+		return $lck->commentOut($keys,$path);
+
+
+
 
 	}
 
@@ -1462,7 +1550,10 @@ JS;
 			else
 			{
 				$text .= $frm->hidden('lanlanguage',$_GET['lanlanguage'],array('id'=>'lanlanguage'));
-				$text .= "<button type='button' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' value='Download and Install' data-src='".e_SELF."' ><span>Bing Translate</span></button>";
+				$text .= "<button type='button' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' data-action='bing' value='Translate' data-src='".e_SELF."' ><span>".ADMIN_BING_ICON." Bing Translate</span></button>";
+				$text .= "<button type='button' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' data-action='comment' value='Comment Out Deprecated LANs' data-src='".e_SELF."' ><span>".ADMIN_CLEAN_ICON." CleanUp LANs</span></button>";
+
+				$text .= "<a class='btn btn-primary' href='".e_SELF."'>".ADMIN_REFRESH_ICON." Refresh</a>";
 				$text .= " <span id='total-status'></span>";
 			}
 			$text .= "</div>";
@@ -1507,6 +1598,7 @@ JS;
 		            var target 		= $(this).attr('data-target'); // support for input buttons etc.
 		            var loading 	= $(this).attr('data-loading'); // image to show loading.
 		            var handler		= $(this).attr('data-src');
+		            var action		= $(this).attr('data-action');
 		     		 // var data 	= $('#'+form).serialize();
 
 					var lancode = $('#lanlanguage').val();
@@ -1539,10 +1631,10 @@ JS;
 						type: 'get',
 						async: false,
 						url: handler,
-						data: { lanid: theid, language: lancode},
+						data: { lanid: theid, language: lancode, action: action},
 						success: function(data)
 							{
-									 // 	console.log(data);
+								//	  	console.log(data);
 								//	 alert('Done:'+ theid);
 								 $('#status-'+theid).html(data);
 							 }
@@ -1651,6 +1743,7 @@ JS;
 				{
 					//$status .= "Exists ";
 					$newid = str_replace($this->languageList,'english',$id);
+					$_SESSION['multilan_lanfilelist_existing'][$newid] = '-'.$mode.'-'.$file;
 					$_SESSION['multilan_lanfiledata_existing'][$newid] = $existing[$file];
 					$lanCount = count($existing[$file]);
 
@@ -1677,6 +1770,9 @@ JS;
 
 					if(file_exists($newFile))
 					{
+
+						$_SESSION['multilan_lanfilelist_existing'][$id] = $newFile;
+
 						$typeArray = array('core'=>'', 'plugin'=>'P', 'theme'=>'T');
 						$parms = array();
 						$parms['mode'] = 'main';
@@ -1710,7 +1806,7 @@ JS;
 
 			$text .= "</table>";
 
-
+		//	var_dump($_SESSION['multilan_lanfilelist_existing']);
 
 			return $text;
 		}
