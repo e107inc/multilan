@@ -240,17 +240,17 @@ class multilan_adminArea extends e_admin_dispatcher
 			}
 /*
 
-			if(!empty($_GET['lanid']) && !empty($_GET['language']) )
+		if(!empty($_GET['lanid']) && !empty($_GET['language']) )
+		{
+			if($this->translateFile($_GET['lanid'],$_GET['language']))
 			{
-				if($this->translateFile($_GET['lanid'],$_GET['language']))
-				{
-					echo ADMIN_BING_ICON; // e107::getParser()->toGlyph('fa-check');
-				}
-				else
-				{
-					echo ADMIN_WARNING_ICON;
-				}
+				echo ADMIN_BING_ICON; // e107::getParser()->toGlyph('fa-check');
 			}
+			else
+			{
+				echo ADMIN_WARNING_ICON;
+			}
+		}
 
 			if(!empty($_GET['lanid']) && !empty($_GET['language']) )
 			{
@@ -1634,7 +1634,7 @@ JS;
 						data: { lanid: theid, language: lancode, action: action},
 						success: function(data)
 							{
-								//	  	console.log(data);
+									 // 	console.log(data);
 								//	 alert('Done:'+ theid);
 								 $('#status-'+theid).html(data);
 							 }
@@ -1808,7 +1808,7 @@ JS;
 
 			$text .= "</table>";
 
-		//	var_dump($_SESSION['multilan_lanfilelist_existing']);
+
 
 			return $text;
 		}
