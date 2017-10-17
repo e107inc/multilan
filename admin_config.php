@@ -1489,6 +1489,34 @@ JS;
 		}
 
 
+		private function initTranslatorSession()
+		{
+			$_SESSION['multilan_lanfilelist']           = array(); // English
+			$_SESSION['multilan_lanfiledata']           = array();
+
+			$_SESSION['multilan_lanfilelist_existing']  = array(); // Trans Language.
+			$_SESSION['multilan_lanfiledata_existing']  = array();
+
+		}
+
+		private function renderLanguageSelection()
+		{
+			//$text .= $frm->select('lanlanguage', $this->languageList, varset($_GET['lanlanguage']), array('class'=>'filter'), 'Select Language');
+
+			$text = '';
+
+			foreach($this->languageList as $key=>$lang)
+			{
+				$url = 'admin_config.php?mode=main&action=core&lanlanguage='.$key;
+				$text .= "<div class='col-md-2' style='margin-bottom:10px'><a class='btn btn-primary btn-block' href='".$url."' data-loading-icon='fa-spinner'>".$lang."</a></div>";
+
+
+			}
+
+			return $text;
+		}
+
+
 		/**
 		 * Core Translator Page.
 		 * @return string
@@ -1519,7 +1547,7 @@ JS;
 
 			$this->addTitle($title);
 
-			$_SESSION['multilan_lanfilelist'] = array();
+
 
 			$this->languageList = $bng->supportedLanguages();
 
@@ -1539,7 +1567,10 @@ JS;
 
 			if(empty($_GET['lanlanguage']))
 			{
-				$text .= $frm->select('lanlanguage', $this->languageList, varset($_GET['lanlanguage']), array('class'=>'filter'), 'Select Language');
+				$text .= $this->renderLanguageSelection();
+
+				$this->initTranslatorSession();
+
 			}
 			else
 			{
