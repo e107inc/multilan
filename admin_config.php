@@ -817,6 +817,14 @@ class multilan_adminArea extends e_admin_dispatcher
 
 		if(empty($toTranslate))
 		{
+			$count1 = count($_SESSION['multilan_lanfiledata'][$id]);
+			$count2 = count($_SESSION['multilan_lanfiledata_existing'][$id]);
+		//	$data1 = print_r($_SESSION['multilan_lanfiledata'][$id],true);
+		//	$data2 = print_r($_SESSION['multilan_lanfiledata_existing'][$id],true);
+
+			$this->logDebug(basename($newFile), "No translation terms detected. English:".$count1." ".$language.":".$count2);
+		//	$this->logDebug(basename($newFile), $data1 . $data2);
+
 			return false;
 		}
 

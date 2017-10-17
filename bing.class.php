@@ -230,12 +230,17 @@
 					$textArray = $this->getParagraphs($text);
 				}
 
-				if(count($textArray) > 2000)
+				$textCount = count($textArray);
+
+				if($textCount > 2000)
 				{
 					$this->log("More than 2000 translation elements detected.");
 					return false;
 				}
-
+				else
+				{
+					$this->log($textCount." terms require translation.");
+				}
 
 
 
