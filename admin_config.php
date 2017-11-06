@@ -42,6 +42,34 @@ td.lan-odd { background-color: rgba(255,255,255,0.05); }
 
 
 
+function multilanCodeConvert($iso)
+{
+	if($iso === 'zh-CHS')
+	{
+		$iso = 'cn';
+	}
+
+	if($iso === 'zh-CHT')
+	{
+		$iso = 'tw';
+	}
+
+
+	$ret = e107::getLanguage()->convert($iso);
+
+	if(empty($ret))
+	{
+		e107::getmessage()->addWarning("Language Code Conversion failed. ".$iso);
+	}
+
+	return $ret;
+
+}
+
+
+
+
+
 class multilan_adminArea extends e_admin_dispatcher
 {
 
@@ -594,7 +622,7 @@ class multilan_adminArea extends e_admin_dispatcher
 
 		$sql            = e107::getDb();
 		$bng            = e107::getSingleton('bingTranslate', e_PLUGIN."multilan/bing.class.php");
-		$languageCode   = e107::getLanguage()->convert($lan);
+		$languageCode   = multilanCodeConvert($lan);
 		$tp = e107::getParser();
 		$row = $sql->retrieve($table, implode(",",$fields), $pid. ' = '.intval($id));
 
@@ -764,20 +792,12 @@ class multilan_adminArea extends e_admin_dispatcher
 		$lng = e107::getLanguage();
 
 		$id             = $_GET['lanid'];
-	//	$languageCode   = e107::getParser()->filter($_GET['language'], 'w');
-		$languageCode   = $_GET['language'];
+		$languageCode   = e107::getParser()->filter($_GET['language'], 'str');
+	//	$languageCode   = $_GET['language'];
 
-		$language       = $lng->convert($languageCode);
+	//	$language       = $lng->convert($languageCode);
 
-		if($languageCode == 'zh-CHS')
-		{
-			$language = 'ChineseSimp';
-		}
-
-		if($languageCode == 'zh-CHT')
-		{
-			$language = 'ChineseTrad';
-		}
+		$language = multilanCodeConvert($languageCode);
 
 
 		$newFile        = str_replace(array('-core-','-plugin-','-theme-','English'), array(e_LANGUAGEDIR.'English/', e_PLUGIN, e_THEME, $language), $_SESSION['multilan_lanfilelist'][$id]);
@@ -1223,7 +1243,12 @@ JS;
 					continue;
 				}
 
-				$key = $lng->convert($v);
+				$key = multilanCodeConvert($v);
+
+				if(empty($key))
+				{
+					e107::getMessage()->addWarning("Key is empty! ".__LINE__);
+				}
 
 
 				$this->fields[$key] = array('title'=> $key,	'type' => 'method', 	'data' => 'str',  'method'=>'findTranslations',	'width' => '60px',	'thclass' => 'center', 'class'=>'center '.$style, 'readonly'=>FALSE,	'batch' => FALSE, 'filter'=>FALSE);
@@ -1480,7 +1505,13 @@ JS;
 
 				$lg = strtolower($langu);
 				$qry = str_replace("{LANGUAGE}",$lg,$query);
-				$key = $lng->convert($langu);
+				$key = multilanCodeConvert($langu);
+
+					if(empty($key))
+				{
+					e107::getMessage()->addWarning("Key is empty! ".__LINE__);
+				}
+
 				$res =$sql2->gen($qry);
 				while($row = $sql2->fetch())
 				{
@@ -1546,7 +1577,11 @@ JS;
 
 			if(!empty($_GET['lanlanguage']))
 			{
-				$title = $lng->convert($_GET['lanlanguage']);
+				$lanLanguage = $_GET['lanlanguage'];
+
+
+
+				$title = multilanCodeConvert($lanLanguage);
 			}
 			else
 			{
@@ -1555,6 +1590,10 @@ JS;
 
 			$this->addTitle($title);
 
+			if(empty($title))
+			{
+				e107::getMessage()->addError("Unable to detect language code:" . $_GET['lanlanguage']);
+			}
 
 
 			$this->languageList = $bng->supportedLanguages();
@@ -1596,6 +1635,8 @@ JS;
 			if(!empty($_GET['lanlanguage']))
 			{
 				$newLanguage = $title;
+
+		//		e107::getMessage()->addWarning("Id: ".$newLanguage);
 
 				$tmp = $this->lck->get_comp_lan_phrases(e_LANGUAGEDIR."English/","English",1);
 				$tmpExst = $this->lck->get_comp_lan_phrases(e_LANGUAGEDIR.$newLanguage."/",$newLanguage,1);
@@ -1709,9 +1750,17 @@ JS;
 			}
 
 			$newArray = array();
+
+
+			$languageList = $this->languageList;
+
+			$languageList[] = 'ChineseSimp';
+			$languageList[] = 'ChineseTrad';
+			$languageList[] = 'Brazilian';
+
 			foreach($array as $k=>$v)
 			{
-				$key = str_replace($this->languageList,'English',$k);
+				$key = str_replace($languageList,'English',$k);
 				$newArray[$key] = $v;
 			}
 
@@ -1723,8 +1772,15 @@ JS;
 		{
 			$frm = e107::getForm();
 			$lng = e107::getLanguage();
-			$languageCode   = e107::getParser()->filter($_GET['lanlanguage'], 'w');
-			$language       = $lng->convert($languageCode);
+		//	$languageCode   = e107::getParser()->filter($_GET['lanlanguage'], 'w');
+
+
+			$language       = multilanCodeConvert($_GET['lanlanguage']);
+
+			if(empty($language))
+			{
+				e107::getMessage()->addWarning("Key is empty! ".__LINE__);
+			}
 
 			if($mode == 'core')
 			{
@@ -1761,10 +1817,14 @@ JS;
 		//		var_dump($existing);
 			}
 
+
+
 			foreach($data as $file => $lans)
 			{
 
 				$id = $frm->name2id($file);
+
+
 				$status = '-';
 
 				$_SESSION['multilan_lanfilelist'][$id] = '-'.$mode.'-'.$file;
@@ -1782,10 +1842,12 @@ JS;
 					$_SESSION['multilan_lanfiledata_existing'][$newid] = $existing[$file];
 					$lanCount = count($existing[$file]);
 
+
 				}
 				else
 				{
-					$lanCount = " Missing :".$file;
+					e107::getDebug()->log("Empty File ".$file);
+					$lanCount = 0;
 				}
 				//var_dump($id);
 				//	var_dump($newid);
@@ -1800,6 +1862,7 @@ JS;
 
 					$newFile  = str_replace(array('-core-','-plugin-','-theme-','English'), array(e_LANGUAGEDIR.'English/',  e_PLUGIN, e_THEME, $language), $_SESSION['multilan_lanfilelist'][$id]);
 					$origFile  = str_replace(array('-core-','-plugin-','-theme-'), array('',  e_PLUGIN, e_THEME), $_SESSION['multilan_lanfilelist'][$id]);
+
 
 
 
@@ -2229,7 +2292,12 @@ JS;
 				return "&nbsp;";
 			}
 
-			$language = e107::getLanguage()->convert($langs);
+			$language = multilanCodeConvert($langs);
+
+			if(empty($language))
+			{
+				e107::getMessage()->addWarning("Language is empty! ".__LINE__);
+			}
 
 			$text = "<b>&middot;</b>";
 
@@ -2371,7 +2439,7 @@ JS;
 
 				$text .="
 		        <tr>
-			        <td>{$lang} (".$lng->convert($lang).")</td>
+			        <td>{$lang} (".multilanCodeConvert($lang).")</td>
 			        <td class='center'>".$this->radio($fieldName, 0, $checked_0)."
 
 			        </td>
