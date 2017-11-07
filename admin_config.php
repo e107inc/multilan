@@ -122,7 +122,7 @@ class multilan_adminArea extends e_admin_dispatcher
 		'generic/list' 		=> array('caption'=> 'Welcome Message', 'perm' => 'P'),
 		'option3'           => array('divider'=>true, 'perm'=>'0'),
 		'main/core'         => array('caption'=>'Core Translator', 'perm'=>'0'),
-		'main/editor'         => array('caption'=>'Core Editor', 'perm'=>'0'),
+		'main/editor'       => array('caption'=>'Core Verify &amp; Package', 'perm'=>'0'),
 		'option2'           => array('divider'=>true, 'perm'=>'0'),
 		'main/prefs' 	    => array('caption'=> LAN_PREFS, 'perm' => '0'), // Preferences
 		'main/tools'       =>array('caption'=>'Tools', 'perm'=>'0'),
@@ -1569,11 +1569,6 @@ JS;
 
 			$authKey = e107::pref('multilan','bing_client_secret');
 
-			if(empty($authKey))
-			{
-				e107::getMessage()->addWarning("Bing Translation requires an API key. Please see the 'Bing' tab in the <a href='".e_PLUGIN."multilan/admin_config.php?mode=main&action=prefs'>preferences</a>");
-				return false;
-			}
 
 			if(!empty($_GET['lanlanguage']))
 			{
@@ -1622,8 +1617,20 @@ JS;
 			else
 			{
 				$text .= $frm->hidden('lanlanguage',$_GET['lanlanguage'],array('id'=>'lanlanguage'));
-				$text .= "<button type='button' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' data-action='bing' value='Translate' data-src='".e_SELF."' ><span>".ADMIN_BING_ICON." Bing Translate</span></button>";
-				$text .= "<button type='button' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' data-action='comment' value='Comment Out Deprecated LANs' data-src='".e_SELF."' ><span>".ADMIN_CLEAN_ICON." Cleanup</span></button>";
+
+				$bingDisabled = null;
+				$bingTitle = 'Translate with Bing';
+
+				if(empty($authKey))
+				{
+					$bingDisabled = 'disabled';
+					$bingTitle = "Bing Translation requires an API key. Please see the Bing tab in the Preferences";
+
+				}
+
+
+				$text .= "<button type='button' title='".$bingTitle."' ".$bingDisabled." data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' data-action='bing' value='Translate' data-src='".e_SELF."' ><span>".ADMIN_BING_ICON." Bing Translate</span></button>";
+				$text .= "<button type='button' title='Remove deprecated LANs' data-loading='".e_IMAGE."generic/loading_32.gif' class='btn btn-primary e-ajax-post' data-action='comment' value='Comment Out Deprecated LANs' data-src='".e_SELF."' ><span>".ADMIN_CLEAN_ICON." Cleanup</span></button>";
 
 				$text .= "<a class='btn btn-primary' href='".e_REQUEST_URI."'>".ADMIN_REFRESH_ICON." Refresh</a>";
 				$text .= " <span id='total-status'></span>";
