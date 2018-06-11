@@ -342,7 +342,7 @@ class multilan_offline
 
 			global $SITEDOWN_TABLE;
 
-			require_once(e_CORE.'shortcodes/batch/sitedown_shortcodes.php');
+			$sitedown_shortcodes= e107::getScBatch('sitedown');
 
 			if (!$SITEDOWN_TABLE)
 			{
