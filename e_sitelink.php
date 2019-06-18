@@ -71,7 +71,7 @@ class multilan_sitelink // include plugin-folder in the name.
 
 
 				$sublinks[] = array(
-					'link_name'			=> $tp->toHtml($name,'','TITLE'),
+					'link_name'			=> $tp->toHTML($name,'','TITLE'),
 					'link_url'			=> $redirect,
 					'link_description'	=> $ln,
 					'link_button'		=> ($flags) ? $this->getFlag($iso, $ln) : '',

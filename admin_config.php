@@ -633,7 +633,7 @@ class multilan_adminArea extends e_admin_dispatcher
 			if(!empty($value))
 			{
 				$html = false;
-			//	$newValue = $bng->getTranslation('en', $languageCode, e107::getParser()->toHtml($value,true));
+			//	$newValue = $bng->getTranslation('en', $languageCode, e107::getParser()->toHTML($value,true));
 				if(strpos($value, '[html]')!==false)
 				{
 					$value = str_replace(array("[html]","[/html]"), "", $value);
