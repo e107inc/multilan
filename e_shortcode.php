@@ -71,4 +71,3 @@ class multilan_shortcodes extends e_shortcode // must match the folder name of t
 	}
 
 }
-?>

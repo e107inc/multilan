@@ -38,4 +38,3 @@ class multilan_nav
 
 new multilan_nav;
 
-?>

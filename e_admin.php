@@ -16,8 +16,11 @@ class multilan_admin
 		$this->active = e107::pref('multilan','admin_translations_tab', e_UC_NOBODY);
 
 	//	e107::js('footer', e_PLUGIN_ABS.'reference/reference.js');
-		define('ADMIN_FLAG_ICON', "<img src='".e_PLUGIN."multilan/images/flag_16.png' class='un-translated' alt='un-translated' />");
-		define('ADMIN_BING_ICON', "<img src='".e_PLUGIN."multilan/images/bing_16.png' class='auto-translated' alt='auto-translated' />");
+		if(!defined('ADMIN_FLAG_ICON'))
+		{
+			define('ADMIN_FLAG_ICON', "<img src='".e_PLUGIN."multilan/images/flag_16.png' class='un-translated' alt='un-translated' />");
+			define('ADMIN_BING_ICON', "<img src='".e_PLUGIN."multilan/images/bing_16.png' class='auto-translated' alt='auto-translated' />");
+		}
 	}
 
 
@@ -230,4 +233,3 @@ class multilan_admin_form
 
 }
 
-?>

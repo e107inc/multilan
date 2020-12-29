@@ -16,4 +16,3 @@ $text .= "<div style='margin-top:5px'>Mouseover each icon to check the title of 
 $ns->tablerender("Translation Status",$text);
 
 
-?>
