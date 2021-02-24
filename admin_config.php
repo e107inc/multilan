@@ -116,16 +116,16 @@ class multilan_adminArea extends e_admin_dispatcher
 
 
 
-		'news/list'			=> array('caption'=> 'News', 'perm' => 'P'),
-		'page/list' 		=> array('caption'=> 'Page', 'perm' => 'P'),
-		'faqs/list' 		=> array('caption'=> 'FAQs', 'perm' => 'P'),
-		'generic/list' 		=> array('caption'=> 'Welcome Message', 'perm' => 'P'),
+		'news/list'			=> array('caption'=> 'News', 'perm' => 'P', 'icon'=>'fa-newspaper-o'),
+		'page/list' 		=> array('caption'=> 'Page', 'perm' => 'P', 'icon'=>'fa-file-o'),
+		'faqs/list' 		=> array('caption'=> 'FAQs', 'perm' => 'P', 'icon'=>'fa-comments'),
+		'generic/list' 		=> array('caption'=> 'Welcome Message', 'perm' => 'P', 'icon'=>'fas-door-open'),
 		'option3'           => array('divider'=>true, 'perm'=>'0'),
-		'main/core'         => array('caption'=>'Core Translator', 'perm'=>'0'),
-		'main/editor'       => array('caption'=>'Core Verify &amp; Package', 'perm'=>'0'),
+		'main/core'         => array('caption'=>'Core Translator', 'perm'=>'0', 'icon'=>'fa-language'),
+		'main/editor'       => array('caption'=>'Core Verify &amp; Package', 'perm'=>'0', 'icon'=>'fa-shield'),
 		'option2'           => array('divider'=>true, 'perm'=>'0'),
 		'main/prefs' 	    => array('caption'=> LAN_PREFS, 'perm' => '0'), // Preferences
-		'main/tools'       =>array('caption'=>'Tools', 'perm'=>'0'),
+		'main/tools'       =>array('caption'=>'Tools', 'perm'=>'0', 'icon'=>'fas-tools'),
 		'main/tables'       => array()
 	);
 
@@ -139,7 +139,7 @@ class multilan_adminArea extends e_admin_dispatcher
 
 	function init()
 	{
-		$this->adminMenu['main/tables'] = array('caption'=>'Tables', 'modal-caption'=>'Database Tables', 'perm'=>0, 'modal'=>true, 'uri'=>e_ADMIN.'language.php?mode=main&iframe=1&action=db');
+		$this->adminMenu['main/tables'] = array('caption'=>'Tables', 'modal-caption'=>'Database Tables', 'perm'=>0, 'modal'=>true, 'uri'=>e_ADMIN.'language.php?mode=main&iframe=1&action=db', 'icon'=>'fa-table');
 
 		e107::css('inline', " #etrigger-batch { width: 300px } ");
 
