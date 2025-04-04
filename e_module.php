@@ -257,6 +257,8 @@ class multilan_offline
 	private $pref;
 	private $excludeAdmin   = false;
 
+	private $active;
+
 	function __construct()
 	{
 
